@@ -1,0 +1,531 @@
+# =============================================================================
+# InfraGuard AI — Training Configuration
+# =============================================================================
+#
+# This file is the single source of truth for every training run.
+# train.py reads this file and passes values directly to Ultralytics.
+#
+# HOW TO USE:
+#   - To start a new experiment: change experiment.name and adjust parameters.
+#   - To reproduce a run: git checkout the commit that produced best.pt and
+#     read this file — it contains the exact configuration that was used.
+#   - Python code should rarely need to change between experiments.
+#
+# YAML SYNTAX REMINDER:
+#   - Strings do not need quotes unless they contain special characters.
+#   - null  → Python None
+#   - true / false → Python True / False
+#   - Numbers without quotes are numeric (int or float).
+#
+# =============================================================================
+
+
+# -----------------------------------------------------------------------------
+# SECTION 1 — MODEL
+# -----------------------------------------------------------------------------
+# Controls which YOLOv8 variant is used and how it is initialised.
+# Changing architecture is the primary lever for trading speed vs accuracy.
+# -----------------------------------------------------------------------------
+
+model:
+
+  # YOLOv8 variant to train.
+  # Options : yolov8n | yolov8s | yolov8m | yolov8l | yolov8x
+  # Guidance :
+  #   yolov8n  — fastest, lowest memory, good baseline (recommended for Colab T4)
+  #   yolov8s  — ~2× more parameters than n, meaningfully better mAP on small objects
+  #   yolov8m  — production-grade balance; requires ~10 GB VRAM at batch 16
+  #   yolov8l/x — research-grade; requires A100 or multi-GPU
+  # Change when : baseline mAP with yolov8n is established and you want to scale up.
+  architecture: yolov8n
+
+  # Start from COCO-pretrained weights rather than random initialisation.
+  # Almost always true — COCO pretraining provides strong low-level feature
+  # detectors (edges, textures) that transfer well to road damage imagery.
+  # Change when : you are intentionally running a from-scratch ablation.
+  pretrained: true
+
+  # Ultralytics task type.  Must be "detect" for bounding box detection.
+  # Other options (segment, classify, pose) are not used in this project.
+  # Do not change.
+  task: detect
+
+
+# -----------------------------------------------------------------------------
+# SECTION 2 — DATASET
+# -----------------------------------------------------------------------------
+# Points training at the preprocessed dataset produced by filter_classes.py.
+# These values are cross-checked by train.py before calling Ultralytics.
+# -----------------------------------------------------------------------------
+
+dataset:
+
+  # Absolute or relative path to the Ultralytics dataset YAML.
+  # Written by preprocessing/filter_classes.py.
+  # train.py resolves this against DATASET_YAML from config.py at runtime —
+  # this entry is kept here for documentation and override purposes.
+  # Change when : training on a different dataset entirely.
+  yaml: data/processed/dataset.yaml
+
+  # Number of classes after filtering.
+  # Must match len(CLASS_NAMES) in config.py exactly.
+  # Ultralytics will error if this does not match nc in dataset.yaml.
+  # Change when : classes are added or removed (requires re-running filter_classes.py).
+  num_classes: 4
+
+  # Human-readable class names in index order (0 → 3).
+  # Must match CLASS_NAMES in config.py exactly.
+  # Used by evaluate.py and callbacks.py for labelled confusion matrices.
+  # Change when : class list changes (must be kept in sync with config.py).
+  class_names:
+    - pothole               # 0 — surface depression / hole
+    - longitudinal_crack    # 1 — crack running parallel to road direction
+    - transverse_crack      # 2 — crack running perpendicular to road direction
+    - alligator_crack       # 3 — interconnected crack network resembling alligator skin
+
+
+# -----------------------------------------------------------------------------
+# SECTION 3 — TRAINING
+# -----------------------------------------------------------------------------
+# Core training loop parameters.  These are the most frequently tuned values
+# between experiments.
+# -----------------------------------------------------------------------------
+
+training:
+
+  # Total number of training epochs.
+  # Recommended : 100 for a full run on RDD2022 (~26,900 training images).
+  # Change when :
+  #   - Quick smoke-test → 5–10 epochs
+  #   - Convergence not reached at 100 → increase to 150
+  #   - Early stopping (see checkpointing.patience) will end training early
+  #     if the model stops improving, so setting this high is safe.
+  epochs: 100
+
+  # Images per gradient update step.
+  # Colab T4 (15 GB VRAM): batch 16 at 640px is stable for yolov8n/s.
+  # Colab A100 (40 GB VRAM): batch 32–64 is feasible.
+  # If you get CUDA OOM errors: halve this value first.
+  # Change when : switching GPU, switching architecture, or getting OOM errors.
+  batch_size: 16
+
+  # Input image resolution (square).  Images are letterboxed to this size.
+  # 640 is the native YOLO resolution and strongly recommended for road damage
+  # detection — thin cracks require high resolution to be visible.
+  # Reducing to 416 cuts memory ~40% but loses fine crack detail significantly.
+  # Change when : GPU memory is critically constrained and cracks are not the focus.
+  image_size: 640
+
+  # DataLoader worker processes for image loading and augmentation.
+  # Colab has 2 CPU cores available to user processes.
+  # Setting > 4 on Colab causes dataloader bottleneck and slows training.
+  # On a local workstation with 8+ cores: set to 8.
+  # Change when : moving to a machine with more CPU cores.
+  workers: 2
+
+  # CUDA device index.  Colab always presents the GPU as device 0.
+  # Use "cpu" only for debugging (training will be extremely slow).
+  # For multi-GPU: "0,1" — not needed for this project.
+  # Change when : running on a machine with multiple GPUs.
+  device: 0
+
+  # Random seed for reproducibility.
+  # Controls weight initialisation, data shuffling, and augmentation randomness.
+  # All baseline runs should use 42 so results are directly comparable.
+  # Change when : intentionally running a different random seed for variance analysis.
+  seed: 42
+
+  # Force deterministic CUDA operations for full reproducibility.
+  # Slight performance cost (~5% slower) due to disabling non-deterministic kernels.
+  # Keep true for baseline and comparison runs; set false for speed benchmarks.
+  deterministic: true
+
+
+# -----------------------------------------------------------------------------
+# SECTION 4 — OPTIMIZER
+# -----------------------------------------------------------------------------
+# Controls the gradient descent algorithm and learning rate schedule start.
+# These values follow the Ultralytics recommended defaults for COCO-pretrained
+# models and are well-validated on similar detection datasets.
+# -----------------------------------------------------------------------------
+
+optimizer:
+
+  # Optimisation algorithm.
+  # Options : SGD | Adam | AdamW | RMSProp
+  # Guidance :
+  #   SGD    — most-tested with YOLO; strong generalisation, slower convergence
+  #   AdamW  — faster initial convergence; can overfit on smaller datasets
+  # Recommendation for RDD2022 : SGD — the dataset is large enough that
+  # SGD's slower convergence is not a concern and generalisation matters more.
+  # Change when : running a quick experiment that needs fast convergence.
+  type: SGD
+
+  # Initial learning rate.
+  # Ultralytics default for SGD with COCO pretraining.
+  # If loss is unstable in the first 10 epochs: halve this value.
+  # Change when : switching optimiser or starting from random init (use 0.001).
+  lr0: 0.01
+
+  # Final learning rate as a fraction of lr0.  Actual final LR = lr0 × lrf.
+  # With lr0=0.01 and lrf=0.01 → final LR = 0.0001.
+  # The scheduler decays from lr0 to (lr0 × lrf) over the training run.
+  # Change when : you want a less aggressive decay (e.g. lrf=0.1 → final LR=0.001).
+  lrf: 0.01
+
+  # SGD momentum.  Controls how much of the previous gradient direction
+  # is retained in the current update step.
+  # Ultralytics default.  Rarely needs tuning.
+  # Change when : explicitly running a momentum ablation study.
+  momentum: 0.937
+
+  # L2 regularisation penalty applied to weights.
+  # Helps prevent overfitting, especially useful given RDD2022's varied image
+  # sources (India, Japan, Norway, USA) which introduce distribution shift.
+  # Ultralytics default.  Increase (e.g. 0.001) if you observe overfitting.
+  # Change when : val loss diverges significantly from train loss.
+  weight_decay: 0.0005
+
+  # Number of epochs to linearly ramp the learning rate from 0 to lr0
+  # before normal scheduling begins.
+  # Prevents large gradient updates from COCO-pretrained weights in early epochs.
+  # Ultralytics default.  Do not set below 1 for pretrained models.
+  # Change when : training from scratch (set to 5).
+  warmup_epochs: 3
+
+  # Initial momentum during warmup.  Ramps from warmup_momentum to momentum.
+  # Ultralytics default.
+  warmup_momentum: 0.8
+
+  # Initial bias learning rate during warmup.
+  # Ultralytics default.  Rarely needs tuning.
+  warmup_bias_lr: 0.1
+
+
+# -----------------------------------------------------------------------------
+# SECTION 5 — SCHEDULER
+# -----------------------------------------------------------------------------
+# Controls how the learning rate decays from lr0 to (lr0 × lrf) during training.
+# Ultralytics implements cosine annealing by default when cos_lr is true.
+# -----------------------------------------------------------------------------
+
+scheduler:
+
+  # Use cosine annealing for learning rate decay.
+  # true  → LR follows a cosine curve from lr0 to (lr0 × lrf).
+  #          Smooth decay, well-suited to large datasets like RDD2022.
+  # false → Linear decay from lr0 to (lr0 × lrf).
+  #          Simpler; slightly faster initial descent.
+  # Recommendation : true for all standard runs.
+  # Change when : running an explicit linear-vs-cosine ablation.
+  cos_lr: true
+
+  # Close mosaic augmentation for the final N epochs to allow the model
+  # to fine-tune on clean (non-mosaiced) images before evaluation.
+  # Ultralytics default is 10.  Effective for improving final mAP.
+  # Change when : total epochs < 20 (set to 0 to disable).
+  close_mosaic_epochs: 10
+
+
+# -----------------------------------------------------------------------------
+# SECTION 6 — AUGMENTATION
+# -----------------------------------------------------------------------------
+# Online augmentation applied during training.  All values are Ultralytics
+# defaults unless noted, tuned for road damage detection on RDD2022.
+#
+# IMPORTANT: All augmentations are applied on-the-fly by the dataloader.
+# They do not modify the source images in data/raw/.
+# Setting any value to 0.0 disables that augmentation entirely.
+# -----------------------------------------------------------------------------
+
+augmentation:
+
+  # --- Colour augmentations ---------------------------------------------------
+
+  # HSV hue shift range (fraction of full hue circle).
+  # Road surfaces vary in colour across countries — mild hue variation
+  # improves generalisation across the multi-national RDD2022 sources.
+  hsv_h: 0.015
+
+  # HSV saturation multiplier range.
+  # Simulates lighting variation (wet roads, overcast vs sunny conditions).
+  hsv_s: 0.7
+
+  # HSV value (brightness) multiplier range.
+  # Handles shadows, direct sunlight, and camera exposure differences.
+  hsv_v: 0.4
+
+  # --- Geometric augmentations -----------------------------------------------
+
+  # Rotation range in degrees (± degrees).
+  # Road images are nominally level — large rotation creates unrealistic images.
+  # Keep at 0.0 for standard runs; small values (± 5°) can help if camera
+  # mounting angles vary in real-world deployment.
+  degrees: 0.0
+
+  # Image translation range as a fraction of image size.
+  # Forces the model to detect objects at varying positions within the frame.
+  translate: 0.1
+
+  # Image scale range.  Images are scaled by a factor in [1 - scale, 1 + scale].
+  # Critical for crack detection — cracks appear at very different scales
+  # depending on camera altitude and road width in the image.
+  scale: 0.5
+
+  # Vertical (up-down) flip probability.
+  # Road images have a strong gravity prior — flipping vertically creates
+  # physically implausible images.  Keep at 0.0.
+  flipud: 0.0
+
+  # Horizontal (left-right) flip probability.
+  # Road images have no left-right bias — flipping horizontally is a free
+  # data augmentation with no plausibility cost.
+  fliplr: 0.5
+
+  # Perspective distortion range.
+  # Simulates camera tilt and road curvature.  Small values improve robustness
+  # to cameras not mounted perfectly perpendicular to the road surface.
+  perspective: 0.0
+
+  # Shear range in degrees.
+  # Rarely beneficial for road damage — keep at 0.0 for baseline.
+  shear: 0.0
+
+  # --- Mixing augmentations ---------------------------------------------------
+
+  # Mosaic augmentation probability.
+  # Combines 4 images into a single training image.  Extremely effective for
+  # road damage detection: forces the model to detect small features (cracks)
+  # in varied contexts and at smaller apparent sizes.
+  # 1.0 = always apply during training (disabled for final close_mosaic_epochs).
+  # Do not reduce below 0.5 without a specific reason.
+  mosaic: 1.0
+
+  # MixUp augmentation probability.
+  # Blends two images and their labels with a random weight.
+  # Mild MixUp (0.1) improves generalisation across the multi-national sources
+  # in RDD2022 by forcing the model to handle ambiguous image blends.
+  # 0.0 = disabled.  Increase cautiously — high MixUp degrades crack precision.
+  mixup: 0.1
+
+  # Copy-paste augmentation probability.
+  # Pastes object instances from one image onto another.
+  # Useful for rare classes — but all 4 InfraGuard classes are well-represented
+  # in RDD2022, so this is disabled by default.
+  copy_paste: 0.0
+
+
+# -----------------------------------------------------------------------------
+# SECTION 7 — VALIDATION
+# -----------------------------------------------------------------------------
+# Controls how predictions are evaluated during and after training.
+# These thresholds affect reported metrics but not the saved weights.
+# -----------------------------------------------------------------------------
+
+validation:
+
+  # Minimum confidence score for a detection to be considered valid.
+  # During training validation, Ultralytics uses this threshold when computing
+  # mAP and producing the confusion matrix.
+  # 0.25 is the Ultralytics default and appropriate for a first baseline.
+  # Tune post-training using evaluate.py on the test split.
+  # Change when : too many false positives → increase; missing detections → decrease.
+  conf_threshold: 0.25
+
+  # IoU threshold for Non-Maximum Suppression (NMS).
+  # Predictions whose IoU exceeds this with a higher-confidence prediction
+  # are suppressed.
+  # 0.7 is the Ultralytics default.  Road damage objects (especially cracks)
+  # can be elongated and overlapping — 0.7 is a reasonable starting point.
+  # Change when : seeing duplicate detections (decrease) or missed adjacent
+  #               damage regions (increase).
+  iou_threshold: 0.7
+
+  # Run validation every N epochs during training.
+  # 1 = validate after every epoch (recommended — gives complete loss curves).
+  # Increase (e.g. 5) only if validation is a training speed bottleneck,
+  # which is unlikely with 5,758 val images on a T4.
+  val_frequency: 1
+
+  # Maximum number of detections per image during validation.
+  # 300 is the Ultralytics default and sufficient for road damage images
+  # (a single image rarely contains more than 20–30 damage instances).
+  max_det: 300
+
+
+# -----------------------------------------------------------------------------
+# SECTION 8 — CHECKPOINTING
+# -----------------------------------------------------------------------------
+# Controls model saving behaviour.  Critical for Colab training where
+# sessions can terminate unexpectedly.
+# -----------------------------------------------------------------------------
+
+checkpointing:
+
+  # Save a checkpoint every N epochs, independent of whether it is the best.
+  # Colab free tier sessions last ~12 hours.  At 100 epochs, saving every 10
+  # means at most 10 epochs of work are lost if the session drops.
+  # Change when : training very long runs (> 200 epochs) → increase to 20.
+  save_period: 10
+
+  # Enable training resume from the last saved checkpoint.
+  # When true, train.py will look for last.pt in the experiment directory
+  # and pass resume=True to Ultralytics if it exists.
+  # Set to false to always start a fresh run even if last.pt is present.
+  resume: true
+
+  # Early stopping patience in epochs.
+  # Training stops if mAP50 does not improve for this many consecutive epochs.
+  # 50 is conservative — allows the model time to escape local minima while
+  # preventing complete waste of Colab compute on a diverged run.
+  # Change when : running a short smoke-test (set to 10).
+  patience: 50
+
+  # Save the best model (highest val mAP50) as best.pt.
+  # Always true — this is the model that train.py promotes to weights/best.pt.
+  # Do not change.
+  save_best: true
+
+  # Save the model from the final epoch as last.pt (used for resume).
+  # Always true for Colab compatibility.
+  # Do not change.
+  save_last: true
+
+
+# -----------------------------------------------------------------------------
+# SECTION 9 — LOGGING
+# -----------------------------------------------------------------------------
+# Controls what is recorded during training and where.
+# All paths are resolved from LOGS_DIR defined in config.py.
+# -----------------------------------------------------------------------------
+
+logging:
+
+  # Enable TensorBoard logging.
+  # Ultralytics writes event files into the run directory inside models/.
+  # Launch with: tensorboard --logdir ai/computer_vision/models/
+  # true = enabled (recommended for all runs except quick smoke-tests).
+  tensorboard: true
+
+  # Enable per-epoch CSV logging via callbacks.py.
+  # Writes one row per epoch to logs/training/<experiment_name>/epoch_log.csv.
+  # Useful for plotting custom learning curves without TensorBoard.
+  csv_logging: true
+
+  # Enable JSON run summary written at training completion by callbacks.py.
+  # Written to logs/runs/<experiment_name>/summary.json.
+  # Contains final mAP50, mAP50-95, training duration, and config snapshot.
+  # Used by prepare_training.py to report results without opening TensorBoard.
+  json_summary: true
+
+  # Ultralytics console verbosity.
+  # true  → print epoch-level loss, mAP, and timing to stdout.
+  # false → suppress Ultralytics output (useful in automated pipelines).
+  # Keep true for interactive Colab sessions.
+  verbose: true
+
+  # Save prediction visualisations (images with drawn bounding boxes) during
+  # validation.  Written to the run directory by Ultralytics.
+  # Useful for visual inspection but increases disk usage on Drive.
+  # Disable for large runs if Drive space is limited.
+  save_plots: true
+
+
+# -----------------------------------------------------------------------------
+# SECTION 10 — EXPERIMENT
+# -----------------------------------------------------------------------------
+# Metadata for the current training run.
+# The experiment name directly controls the output folder name inside models/.
+# Every new experiment should get a unique, descriptive name.
+# -----------------------------------------------------------------------------
+
+experiment:
+
+  # Short identifier for this run.  Used as:
+  #   - Ultralytics name= argument → models/<name>/ output directory
+  #   - Log file prefix in logs/training/ and logs/runs/
+  #   - Key in the JSON summary
+  # Convention : <architecture>_<dataset-version>_<change-description>_v<N>
+  # Examples   : yolov8n_rdd2022_baseline_v1
+  #              yolov8s_rdd2022_augmented_v1
+  #              yolov8n_rdd2022_lr001_v2
+  # Change for : every new experiment.  Never reuse a name for a different run.
+  name: yolov8n_rdd2022_baseline_v1
+
+  # Human-readable description of what this experiment is testing.
+  # Written into the JSON summary so future teammates understand the intent.
+  description: >
+    Baseline YOLOv8n run on filtered RDD2022 dataset (4 classes).
+    Standard Ultralytics defaults with mild MixUp augmentation.
+    Establishes baseline mAP50 for comparison against larger architectures.
+
+  # Version tag for the experiment series.
+  # Increment when changing architecture; reset when changing dataset version.
+  version: "1.0"
+
+  # Team member running this experiment.
+  # Written into the JSON summary for traceability.
+  author: InfraGuard Team
+
+  # Free-form notes about any known issues, deviations from standard config,
+  # or observations from a previous run that motivated this configuration.
+  # Leave empty string if nothing to note.
+  notes: ""
+
+
+# -----------------------------------------------------------------------------
+# SECTION 11 — EXPORT
+# -----------------------------------------------------------------------------
+# Post-training model export options.  These flags are read by export.py,
+# not by train.py — training does not depend on export configuration.
+#
+# Exported models are written to exports/<experiment_name>.<format>.
+# -----------------------------------------------------------------------------
+
+export:
+
+  # Export to PyTorch format (.pt).
+  # This is the native Ultralytics format and is what weights/best.pt already is.
+  # FastAPI loads this directly via YOLO(model_path).
+  # Always true — the source .pt file is the export baseline.
+  pytorch: true
+
+  # Export to ONNX format (.onnx).
+  # Enables inference via ONNX Runtime — useful if FastAPI switches to
+  # a non-PyTorch runtime for lower latency or lighter CPU deployment.
+  # Requires: pip install onnx onnxruntime
+  # Set true when the backend team is ready to integrate ONNX Runtime.
+  onnx: false
+
+  # ONNX-specific: opset version.
+  # 17 is compatible with onnxruntime >= 1.15 and PyTorch 2.x.
+  # Change when : targeting an older ONNX Runtime version (use 12 for 1.12).
+  onnx_opset: 17
+
+  # ONNX-specific: simplify the graph using onnx-simplifier.
+  # Removes redundant nodes and improves runtime performance.
+  # Requires: pip install onnx-simplifier
+  onnx_simplify: true
+
+  # Export to TensorRT engine (.engine).
+  # Maximum throughput on NVIDIA GPUs.  Not useful for Colab inference —
+  # relevant only if the production server has a dedicated NVIDIA GPU.
+  # Requires: TensorRT installed (not available in standard Colab).
+  # Set true only when deploying to a GPU server with TensorRT support.
+  tensorrt: false
+
+  # TensorRT-specific: use FP16 precision (half precision).
+  # Halves model size and increases throughput on Tensor Core GPUs.
+  # Only meaningful when tensorrt is true.
+  tensorrt_fp16: true
+
+  # Export to TFLite format (.tflite).
+  # Required for on-device inference on Android (Flutter mobile app).
+  # Listed as future scope in the project architecture.
+  # Set true when mobile inference is being implemented.
+  tflite: false
+
+  # Input image size for exported models.
+  # Must match training.image_size to avoid shape mismatch errors at inference.
+  # Change only if training.image_size is changed.
+  export_image_size: 640

@@ -1,0 +1,85 @@
+# Virtual Environment
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Environment
+.env
+
+# Model files (optional - we'll decide later)
+*.pt
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# VS Code / Cursor
+.vscode/
+
+# ==========================
+# Virtual Environment
+# ==========================
+.venv/
+
+# ==========================
+# Python
+# ==========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# ==========================
+# Jupyter
+# ==========================
+.ipynb_checkpoints/
+
+# ==========================
+# Environment
+# ==========================
+.env
+
+# ==========================
+# VS Code / Cursor
+# ==========================
+.vscode/
+
+# ==========================
+# OS Files
+# ==========================
+.DS_Store
+Thumbs.db
+
+# ==========================
+# ML Models
+# ==========================
+*.pt
+*.onnx
+*.tflite
+*.engine
+
+# ==========================
+# Training Outputs
+# ==========================
+models/
+runs/
+exports/
+evaluation/
+
+# ==========================
+# Dataset
+# ==========================
+ai/computer_vision/data/raw/
+ai/computer_vision/data/processed/
+
+# Kaggle credentials
+kaggle.json
