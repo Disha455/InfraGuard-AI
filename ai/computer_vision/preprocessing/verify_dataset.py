@@ -6,7 +6,7 @@ Purpose:
     Confirm the filtered dataset is structurally sound before training begins.
 
 Input:
-    data/raw/<split>/images/         — original images (existence check only)
+    data/processed/<split>/images/   — symlinked or copied images
     data/processed/<split>/labels/   — filtered + remapped label files
     data/processed/dataset.yaml      — Ultralytics training config
 
@@ -15,10 +15,12 @@ Output:
     Exit code 0 on success, 1 on any hard failure (CI-compatible).
 
 Responsibilities:
-    1. Verify all expected split directories exist in data/processed/.
-    2. Cross-check: every processed label has a corresponding raw image,
-       resolving the actual dataset root to handle Kaggle wrapper folders
-       (e.g. raw/RDD_SPLIT/) exactly as filter_classes.py does.
+    1. Verify all expected split directories (images/ + labels/) exist in
+       data/processed/.
+    2. Cross-check: every processed label has a corresponding image inside
+       processed/<split>/images/ (the standard YOLO layout produced by
+       filter_classes.py).  Falls back to raw/ resolution for datasets that
+       were filtered with an older pipeline version.
     3. Confirm all class IDs are within the valid range [0, n_classes - 1].
     4. Warn (non-fatal) if any label file is empty.
     5. Verify dataset.yaml exists at the configured path.
@@ -138,18 +140,31 @@ def _find_raw_image(label_path: Path, raw_split_images_dir: Path) -> bool:
 # ---------------------------------------------------------------------------
 
 def _check_splits_exist(processed_dir: Path) -> CheckResult:
-    """All expected split label directories must be present in processed/."""
-    missing = [
-        s for s in SPLITS
-        if not (processed_dir / s / "labels").exists()
-    ]
+    """
+    Both ``images/`` and ``labels/`` must be present for every expected split.
+
+    The new YOLO layout produced by :func:`filter_classes.filter_classes`
+    writes image links and filtered labels into the same split parent::
+
+        processed/<split>/images/
+        processed/<split>/labels/
+
+    Both directories must exist for Ultralytics to locate the data correctly.
+    """
+    missing: list[str] = []
+    for split in SPLITS:
+        for sub in ("images", "labels"):
+            d = processed_dir / split / sub
+            if not d.exists():
+                missing.append(f"{split}/{sub}/")
+
     if missing:
         return CheckResult(
-            name="Split label dirs exist",
+            name="Split dirs exist (images + labels)",
             passed=False,
-            message=f"Missing splits in processed/: {missing}",
+            message=f"Missing directories in processed/: {missing}",
         )
-    return CheckResult(name="Split label dirs exist", passed=True)
+    return CheckResult(name="Split dirs exist (images + labels)", passed=True)
 
 
 def _check_label_image_alignment(
@@ -157,69 +172,62 @@ def _check_label_image_alignment(
     raw_dir: Path,
 ) -> CheckResult:
     """
-    Every processed label must have a corresponding raw image.
+    Every processed label must have a corresponding image in ``processed/<split>/images/``.
 
-    Uses :func:`_resolve_raw_root` to locate the actual split root inside
-    *raw_dir* before building image paths.  This handles Kaggle wrapper
-    folders (e.g. ``raw/RDD_SPLIT/``) identically to
-    :func:`filter_classes.filter_classes`.
+    The new pipeline writes image symlinks (or copies) alongside labels in
+    the same split directory, so the primary check looks inside
+    ``processed/``.  A fallback using :func:`_resolve_raw_root` is applied
+    for datasets processed with an older pipeline version that only wrote
+    labels and kept images in ``raw/``.
 
     Args:
         processed_dir: Root of the processed dataset.
-        raw_dir:       Configured ``RAW_DATASET`` path (may contain a
-                       wrapper sub-folder).
+        raw_dir:       Configured ``RAW_DATASET`` path (used only as fallback).
 
     Returns:
         :class:`CheckResult` — passes when every label has a matching image.
     """
-    # Resolve the actual split root — handles Kaggle sub-folder extraction
-    dataset_root = _resolve_raw_root(raw_dir)
-
-    if dataset_root is None:
-        return CheckResult(
-            name="Labels have matching raw images",
-            passed=False,
-            message=(
-                f"Cannot locate split directories inside '{raw_dir}'. "
-                "Run download_dataset.py first."
-            ),
-        )
-
-    logger.info(
-        "Image alignment check using dataset root: %s", dataset_root
-    )
-
     missing_images: list[str] = []
 
+    # Determine fallback raw root once (handles Kaggle wrapper folders)
+    raw_root_fallback = _resolve_raw_root(raw_dir)
+
     for split_name in SPLITS:
-        labels_dir = processed_dir / split_name / "labels"
-        raw_images_dir = dataset_root / split_name / "images"
+        labels_dir          = processed_dir / split_name / "labels"
+        processed_images_dir = processed_dir / split_name / "images"
 
         if not labels_dir.exists():
             continue
 
-        if not raw_images_dir.exists():
-            missing_images.append(
-                f"{split_name}/ — raw images directory not found: "
-                f"{raw_images_dir}"
-            )
-            continue
-
         for label_path in list_labels(labels_dir):
-            if not _find_raw_image(label_path, raw_images_dir):
-                missing_images.append(f"{split_name}/{label_path.name}")
+            # Primary: check processed/<split>/images/ (new YOLO layout)
+            if processed_images_dir.exists() and _find_raw_image(
+                label_path, processed_images_dir
+            ):
+                continue
 
-    if missing_images:
-        preview = [f"  No raw image for: {p}" for p in missing_images[:10]]
-        if len(missing_images) > 10:
-            preview.append(f"  … and {len(missing_images) - 10} more.")
-        return CheckResult(
-            name="Labels have matching raw images",
-            passed=False,
-            message=f"{len(missing_images)} label(s) have no matching image in raw/.",
-            warnings=preview,
-        )
-    return CheckResult(name="Labels have matching raw images", passed=True)
+            # Fallback: check raw/<split>/images/ (older pipeline output)
+            if raw_root_fallback is not None:
+                raw_images_dir = raw_root_fallback / split_name / "images"
+                if raw_images_dir.exists() and _find_raw_image(
+                    label_path, raw_images_dir
+                ):
+                    continue
+
+            missing_images.append(f"{split_name}/{label_path.name}")
+
+    if not missing_images:
+        return CheckResult(name="Labels have matching images", passed=True)
+
+    preview = [f"  No image for: {p}" for p in missing_images[:10]]
+    if len(missing_images) > 10:
+        preview.append(f"  … and {len(missing_images) - 10} more.")
+    return CheckResult(
+        name="Labels have matching images",
+        passed=False,
+        message=f"{len(missing_images)} label(s) have no matching image.",
+        warnings=preview,
+    )
 
 
 def _check_valid_class_ids(processed_dir: Path, n_classes: int) -> CheckResult:
@@ -398,17 +406,19 @@ def verify_dataset(
     print_separator("-", 60)
 
     # ------------------------------------------------------------------
-    # Per-split label counts
+    # Per-split image + label counts
     # ------------------------------------------------------------------
-    print("\n  Label Counts (processed/):")
+    print("\n  Counts (processed/):")
     print_separator("-", 60)
-    print(f"  {'Split':<10} {'Labels':>10}")
+    print(f"  {'Split':<10} {'Images':>10} {'Labels':>10}")
     print_separator("-", 60)
 
     for split_name in SPLITS:
+        images_dir = processed_dir / split_name / "images"
         labels_dir = processed_dir / split_name / "labels"
+        img_count = len(list(images_dir.iterdir())) if images_dir.exists() else 0
         lbl_count = len(list_labels(labels_dir))
-        print(f"  {split_name:<10} {lbl_count:>10,}")
+        print(f"  {split_name:<10} {img_count:>10,} {lbl_count:>10,}")
 
     print_separator("-", 60)
 

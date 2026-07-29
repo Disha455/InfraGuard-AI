@@ -1,29 +1,47 @@
 """
 InfraGuard AI
-Computer Vision — Class Filter & Label Remap
+Computer Vision — Class Filter, Label Remap & Dataset Layout
 
 Purpose:
-    Remove the "other_corruption" class from RDD2022 labels and remap
-    the remaining class IDs to the contiguous 0-3 scheme used by
-    InfraGuard AI.  Write a dataset.yaml that points Ultralytics at the
-    raw images and the filtered labels — so images are never duplicated.
+    Remove the "other_corruption" class from RDD2022 labels, remap the
+    remaining class IDs to the contiguous 0-3 scheme used by InfraGuard AI,
+    and write a standard YOLO dataset layout that Ultralytics can consume
+    directly without any path tricks.
 
 Input:
-    data/raw/<split>/labels/*.txt   — original RDD2022 YOLO annotations
-    data/raw/<split>/images/        — original images (read-only, never touched)
+    data/raw/<split>/images/   — original images (never modified)
+    data/raw/<split>/labels/   — original RDD2022 YOLO annotations
 
 Output:
-    data/processed/<split>/labels/*.txt  — filtered + remapped annotations
-    data/processed/dataset.yaml          — Ultralytics training config
+    data/processed/
+    ├── train/
+    │   ├── images/   ← symlinks to raw images (copy fallback on Windows)
+    │   └── labels/   ← filtered + remapped annotations
+    ├── val/
+    │   ├── images/
+    │   └── labels/
+    ├── test/
+    │   ├── images/
+    │   └── labels/
+    └── dataset.yaml  ← Ultralytics config using relative paths
+
+Why this layout?
+    Ultralytics resolves label paths from image paths by replacing the
+    ``images`` path component with ``labels``.  Both directories must
+    therefore share the same split parent.  A dataset.yaml that points
+    images at raw/ but labels at processed/ causes Ultralytics to silently
+    load the *original* unfiltered labels, making the filter step invisible
+    to training.  Placing symlinked images alongside filtered labels in
+    processed/ fixes this with zero extra disk usage on Linux / Colab.
 
 Responsibilities:
-    1. Read every .txt label from data/raw/.
-    2. Drop any row whose class ID is in REMOVED_CLASS_IDS (other_corruption = 3).
-    3. Remap surviving class IDs via CLASS_REMAP.
-    4. Write cleaned labels to data/processed/<split>/labels/.
-    5. Write dataset.yaml with absolute image paths pointing to data/raw/.
-    6. Never copy, move, or modify images.
-    7. Never modify the original label files.
+    1. Remove annotations whose class ID is in REMOVED_CLASS_IDS.
+    2. Remap surviving class IDs via CLASS_REMAP.
+    3. Skip images whose label has no remaining valid annotations.
+    4. Write filtered labels to   processed/<split>/labels/.
+    5. Link (or copy) images to   processed/<split>/images/.
+    6. Write dataset.yaml with relative split paths so the file is
+       portable regardless of where the project is mounted.
 
 Execution:
     # From ai/computer_vision/
@@ -31,6 +49,8 @@ Execution:
 """
 
 import logging
+import os
+import shutil
 from pathlib import Path
 
 import yaml  # PyYAML — already in requirements.txt
@@ -47,7 +67,7 @@ from configs.config import (
 from utils.utils import (
     create_directory,
     get_logger,
-    list_labels,
+    list_images,
     parse_yolo_label,
     print_section,
     print_separator,
@@ -61,48 +81,77 @@ logger: logging.Logger = get_logger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Internal helpers — label processing
+# Helper: directory creation
 # ---------------------------------------------------------------------------
 
-def _format_yolo_row(class_id: int, coords: list[float]) -> str:
+def ensure_dir(path: Path) -> None:
     """
-    Serialise one annotation back to YOLO .txt format.
+    Create *path* and any missing parents.  No-op if it already exists.
 
     Args:
-        class_id: Remapped integer class index.
-        coords:   ``[cx, cy, w, h]`` as floats (normalised 0–1).
-
-    Returns:
-        String of the form ``"0 0.512345 0.487654 0.123456 0.098765"``.
+        path: Directory to create.
     """
-    coord_str = " ".join(f"{v:.6f}" for v in coords)
-    return f"{class_id} {coord_str}"
+    create_directory(path)
 
 
-def _filter_and_remap_label(
-    src_label: Path,
-    dst_label: Path,
-) -> tuple[int, int]:
+# ---------------------------------------------------------------------------
+# Helper: image linking
+# ---------------------------------------------------------------------------
+
+def create_image_link(src: Path, dst: Path) -> None:
     """
-    Filter and remap one YOLO label file.
+    Create a filesystem link from *src* to *dst*.
 
-    Reads *src_label*, skips rows whose class is in ``REMOVED_CLASS_IDS``,
-    remaps remaining class IDs via ``CLASS_REMAP``, and writes the result
-    to *dst_label*.  The destination parent directory is created if needed.
+    Attempts ``os.symlink`` first (zero extra disk usage on Linux / Colab).
+    Falls back to ``shutil.copy2`` when symlinks are not supported (Windows
+    without elevated privileges, some network file systems).
+
+    If *dst* already exists the call is a no-op — the link/copy was already
+    created by a previous run.
+
+    Args:
+        src: Absolute path to the source image in raw/.
+        dst: Desired path in processed/<split>/images/.
+    """
+    if dst.exists() or dst.is_symlink():
+        return  # idempotent
+
+    ensure_dir(dst.parent)
+
+    try:
+        os.symlink(src.resolve(), dst)
+    except (OSError, NotImplementedError):
+        shutil.copy2(src, dst)
+
+
+# ---------------------------------------------------------------------------
+# Helper: label filtering + remapping
+# ---------------------------------------------------------------------------
+
+def process_label(src_label: Path, dst_label: Path) -> tuple[int, int]:
+    """
+    Filter and remap one YOLO ``.txt`` label file.
+
+    Reads *src_label*, drops every row whose class ID is in
+    ``REMOVED_CLASS_IDS``, remaps the remaining IDs through ``CLASS_REMAP``,
+    and writes the result to *dst_label*.
+
+    An image whose every annotation is dropped produces an empty *dst_label*
+    file.  The caller (:func:`process_split`) checks for this and skips the
+    corresponding image link.
 
     Args:
         src_label: Source annotation file (original RDD2022 label).
         dst_label: Destination annotation file (processed label).
 
     Returns:
-        ``(kept, dropped)`` — count of annotation rows kept and dropped.
+        ``(kept, dropped)`` — counts of annotation rows kept and dropped.
 
     Raises:
         ValueError: Propagated from :func:`parse_yolo_label` on malformed input.
-        OSError:    If the destination file cannot be written.
+        OSError:    If *dst_label* cannot be written.
     """
     rows = parse_yolo_label(src_label)
-
     kept_lines: list[str] = []
     dropped = 0
 
@@ -123,57 +172,122 @@ def _filter_and_remap_label(
             continue
 
         remapped_id = CLASS_REMAP[class_id]
-        kept_lines.append(_format_yolo_row(remapped_id, row[1:]))
+        coord_str = " ".join(f"{v:.6f}" for v in row[1:])
+        kept_lines.append(f"{remapped_id} {coord_str}")
 
-    create_directory(dst_label.parent)
-
+    ensure_dir(dst_label.parent)
     with dst_label.open("w", encoding="utf-8") as fh:
         if kept_lines:
             fh.write("\n".join(kept_lines) + "\n")
-        # Empty file is valid for background images — leave blank intentionally
 
     return len(kept_lines), dropped
 
 
 # ---------------------------------------------------------------------------
-# Internal helper — dataset.yaml
+# Helper: process one split
 # ---------------------------------------------------------------------------
 
-def _write_dataset_yaml(
+def process_split(
+    split_name: str,
+    src_images_dir: Path,
+    src_labels_dir: Path,
+    dst_split_dir: Path,
+) -> tuple[int, int]:
+    """
+    Process all images and labels for one dataset split.
+
+    For each image in *src_images_dir*:
+
+    1. Locate the corresponding source label (same stem, ``.txt`` extension).
+    2. If the source label does not exist, skip the image silently.
+    3. Filter and remap the label via :func:`process_label`.
+    4. If the filtered label is empty (all annotations removed), skip.
+    5. Write the filtered label to ``dst_split_dir/labels/``.
+    6. Link (or copy) the image to ``dst_split_dir/images/``.
+
+    Args:
+        split_name:     Human-readable split identifier for log messages.
+        src_images_dir: ``raw/<split>/images/`` directory.
+        src_labels_dir: ``raw/<split>/labels/`` directory.
+        dst_split_dir:  ``processed/<split>/`` destination root.
+
+    Returns:
+        ``(processed, skipped)`` — counts of image-label pairs handled
+        and skipped (no label or empty after filtering).
+    """
+    dst_images_dir = dst_split_dir / "images"
+    dst_labels_dir = dst_split_dir / "labels"
+    ensure_dir(dst_images_dir)
+    ensure_dir(dst_labels_dir)
+
+    images = list_images(src_images_dir)
+    processed = 0
+    skipped = 0
+
+    for src_image in images:
+        src_label = src_labels_dir / (src_image.stem + ".txt")
+
+        if not src_label.exists():
+            skipped += 1
+            continue
+
+        dst_label = dst_labels_dir / (src_image.stem + ".txt")
+
+        try:
+            kept, _ = process_label(src_label, dst_label)
+        except (ValueError, OSError) as exc:
+            logger.error("Failed to process label '%s': %s", src_label, exc)
+            skipped += 1
+            continue
+
+        if kept == 0:
+            # Remove the empty label file so processed/ stays clean
+            if dst_label.exists():
+                dst_label.unlink()
+            skipped += 1
+            continue
+
+        create_image_link(src_image, dst_images_dir / src_image.name)
+        processed += 1
+
+    return processed, skipped
+
+
+# ---------------------------------------------------------------------------
+# Helper: dataset.yaml
+# ---------------------------------------------------------------------------
+
+def write_dataset_yaml(
     processed_dir: Path,
-    raw_dir: Path,
     class_names: list[str],
     yaml_path: Path,
 ) -> None:
     """
-    Write the Ultralytics ``dataset.yaml`` configuration file.
+    Write the Ultralytics ``dataset.yaml`` using relative split paths.
 
-    Image paths point to *raw_dir* so images are never duplicated.
-    Label paths are resolved automatically by Ultralytics by replacing
-    ``images`` with ``labels`` in each image path — which works correctly
-    because ``processed_dir/<split>/labels/`` mirrors the structure of
-    ``raw_dir/<split>/images/``.
+    With ``path`` set to the absolute *processed_dir* and the three split
+    keys set to relative strings (``train/images``, etc.), Ultralytics
+    resolves both images and labels correctly.  Labels are found by
+    replacing ``images`` with ``labels`` in each resolved image path —
+    which works because :func:`process_split` writes labels alongside images
+    inside the same ``processed/<split>/`` parent.
 
-    The ``path`` key is set to *processed_dir* so Ultralytics resolves
-    relative paths from there.  Image sub-paths use absolute paths to
-    *raw_dir* to avoid any ambiguity.
+    The file is portable: moving the entire ``processed/`` directory
+    requires updating only the ``path`` key.
 
     Args:
-        processed_dir: Root of the processed dataset (contains labels/).
-        raw_dir:       Root of the raw dataset (contains images/).
+        processed_dir: Absolute path to the processed dataset root.
         class_names:   Ordered list of class name strings.
         yaml_path:     Destination path for the YAML file.
     """
-    create_directory(yaml_path.parent)
+    ensure_dir(yaml_path.parent)
 
-    # Use absolute paths for images so the YAML is portable regardless of
-    # the working directory from which training is launched.
     data: dict = {
-        "path": str(processed_dir.resolve()),
-        "train": str((raw_dir / "train" / "images").resolve()),
-        "val":   str((raw_dir / "val"   / "images").resolve()),
-        "test":  str((raw_dir / "test"  / "images").resolve()),
-        "nc": len(class_names),
+        "path":  str(processed_dir.resolve()),
+        "train": "train/images",
+        "val":   "val/images",
+        "test":  "test/images",
+        "nc":    len(class_names),
         "names": class_names,
     }
 
@@ -184,7 +298,7 @@ def _write_dataset_yaml(
 
 
 # ---------------------------------------------------------------------------
-# Internal helper — dataset root resolution
+# Raw dataset root resolution
 # ---------------------------------------------------------------------------
 
 def _resolve_raw_root(raw_dir: Path) -> Path:
@@ -192,8 +306,8 @@ def _resolve_raw_root(raw_dir: Path) -> Path:
     Locate the actual split root inside *raw_dir*.
 
     Kaggle sometimes extracts the archive into a sub-folder (e.g.
-    ``raw/rdd2022/``).  This function checks *raw_dir* itself first,
-    then one level deeper.
+    ``raw/RDD_SPLIT/``).  Checks *raw_dir* itself first, then one level
+    deeper.
 
     Args:
         raw_dir: Configured ``RAW_DATASET`` path.
@@ -208,7 +322,9 @@ def _resolve_raw_root(raw_dir: Path) -> Path:
         return raw_dir
 
     for candidate in sorted(raw_dir.iterdir()):
-        if candidate.is_dir() and any((candidate / s).exists() for s in SPLITS):
+        if candidate.is_dir() and any(
+            (candidate / s).exists() for s in SPLITS
+        ):
             return candidate
 
     raise FileNotFoundError(
@@ -229,28 +345,35 @@ def filter_classes(
     skip_if_exists: bool = True,
 ) -> Path:
     """
-    Filter and remap all RDD2022 labels, then write ``dataset.yaml``.
+    Filter RDD2022 labels, remap class IDs, and build a YOLO dataset layout.
 
-    For each split the function:
+    Produces a ``processed/`` directory that is immediately usable with::
 
-    * Reads every ``.txt`` label from ``raw_dir/<split>/labels/``.
-    * Drops rows for classes listed in ``REMOVED_CLASS_IDS``.
-    * Remaps surviving class IDs via ``CLASS_REMAP``.
-    * Writes cleaned labels to ``processed_dir/<split>/labels/``.
+        model.train(data="data/processed/dataset.yaml")
 
-    After processing all splits it writes a ``dataset.yaml`` whose image
-    paths reference ``raw_dir`` directly — so **no images are ever copied**.
+    For each split (train / val / test) the function:
+
+    * Reads every image in ``raw_dir/<split>/images/``.
+    * Reads the corresponding label from ``raw_dir/<split>/labels/``.
+    * Drops annotations in :data:`REMOVED_CLASS_IDS` (``other_corruption``).
+    * Remaps surviving class IDs via :data:`CLASS_REMAP`.
+    * Writes the filtered label to ``processed_dir/<split>/labels/``.
+    * Symlinks (or copies) the image to ``processed_dir/<split>/images/``.
+    * Skips images with no remaining valid annotations.
+
+    Finishes by writing ``dataset.yaml`` with relative split paths so
+    Ultralytics resolves both images and labels from the same split parent.
 
     Args:
-        raw_dir:        Source directory containing the extracted dataset.
-                        Defaults to ``RAW_DATASET`` from ``config.py``.
-        processed_dir:  Destination for filtered labels and ``dataset.yaml``.
-                        Defaults to ``PROCESSED_DATASET`` from ``config.py``.
-        yaml_path:      Path where ``dataset.yaml`` will be written.
-                        Defaults to ``DATASET_YAML`` from ``config.py``.
-        skip_if_exists: When ``True`` and *processed_dir* already contains
-                        files, the entire operation is skipped.  Set to
-                        ``False`` to force a re-run.
+        raw_dir:         Source directory containing the extracted dataset.
+                         Defaults to ``RAW_DATASET`` from ``config.py``.
+        processed_dir:   Destination for the complete YOLO layout.
+                         Defaults to ``PROCESSED_DATASET`` from ``config.py``.
+        yaml_path:       Path where ``dataset.yaml`` will be written.
+                         Defaults to ``DATASET_YAML`` from ``config.py``.
+        skip_if_exists:  When ``True`` and *processed_dir* already contains
+                         ``.txt`` files, the entire operation is skipped.
+                         Set to ``False`` to force a full re-run.
 
     Returns:
         Path to *processed_dir*.
@@ -258,7 +381,7 @@ def filter_classes(
     Raises:
         FileNotFoundError: If *raw_dir* does not exist or contains no splits.
     """
-    print_section("Filter Classes & Remap Labels")
+    print_section("Filter Classes & Build YOLO Dataset")
 
     # ------------------------------------------------------------------
     # Guard — raw dataset must exist
@@ -274,7 +397,7 @@ def filter_classes(
     # ------------------------------------------------------------------
     if skip_if_exists and processed_dir.exists() and any(processed_dir.rglob("*.txt")):
         logger.info(
-            "Processed labels already exist in '%s' — skipping.",
+            "Processed dataset already exists in '%s' — skipping.",
             processed_dir,
         )
         logger.info("Set skip_if_exists=False to force re-processing.")
@@ -285,18 +408,16 @@ def filter_classes(
     # ------------------------------------------------------------------
     dataset_root = _resolve_raw_root(raw_dir)
 
-    create_directory(processed_dir)
+    ensure_dir(processed_dir)
 
     logger.info("Raw dataset root : %s", dataset_root)
     logger.info("Processed dir    : %s", processed_dir)
-    logger.info("Removing class IDs : %s  (other_corruption)", sorted(REMOVED_CLASS_IDS))
-    logger.info("Remap table        : %s", CLASS_REMAP)
-    logger.info("Output class names : %s", CLASS_NAMES)
-    logger.info("Images stay in raw/ — no duplication.")
+    logger.info("Removing IDs     : %s  (other_corruption)", sorted(REMOVED_CLASS_IDS))
+    logger.info("Remap table      : %s", CLASS_REMAP)
+    logger.info("Output classes   : %s", CLASS_NAMES)
 
-    total_kept = 0
-    total_dropped = 0
-    total_labels = 0
+    total_processed = 0
+    total_skipped = 0
 
     # ------------------------------------------------------------------
     # Process each split
@@ -307,54 +428,46 @@ def filter_classes(
             logger.warning("Split '%s' not found in raw/ — skipping.", split_name)
             continue
 
-        labels_src = split_src / "labels"
-        labels_dst = processed_dir / split_name / "labels"
+        src_images_dir = split_src / "images"
+        src_labels_dir = split_src / "labels"
+        dst_split_dir  = processed_dir / split_name
 
-        src_labels = list_labels(labels_src)
-        split_kept = 0
-        split_dropped = 0
+        if not src_images_dir.exists():
+            logger.warning(
+                "images/ directory missing for split '%s' — skipping.", split_name
+            )
+            continue
 
-        logger.info(
-            "Processing split '%-5s' — %d label files …",
-            split_name, len(src_labels),
+        logger.info("Processing %s ...", split_name)
+
+        n_processed, n_skipped = process_split(
+            split_name=split_name,
+            src_images_dir=src_images_dir,
+            src_labels_dir=src_labels_dir,
+            dst_split_dir=dst_split_dir,
         )
 
-        for src_label in src_labels:
-            rel = src_label.relative_to(labels_src)
-            dst_label = labels_dst / rel
-
-            try:
-                kept, dropped = _filter_and_remap_label(src_label, dst_label)
-                split_kept += kept
-                split_dropped += dropped
-            except (ValueError, OSError) as exc:
-                logger.error("Failed to process '%s': %s", src_label, exc)
-
-        total_kept += split_kept
-        total_dropped += split_dropped
-        total_labels += len(src_labels)
+        total_processed += n_processed
+        total_skipped   += n_skipped
 
         print_separator("-", 60)
-        print(f"  Split   : {split_name}")
-        print(f"  Labels  : {len(src_labels):,} files processed")
-        print(f"  Kept    : {split_kept:,} annotations")
-        print(f"  Dropped : {split_dropped:,} annotations  (other_corruption)")
+        print(f"  Split            : {split_name}")
+        print(f"  Images processed : {n_processed:,}")
+        print(f"  Images skipped   : {n_skipped:,}  (no label or empty after filter)")
 
     # ------------------------------------------------------------------
     # Write dataset.yaml
     # ------------------------------------------------------------------
-    _write_dataset_yaml(processed_dir, dataset_root, CLASS_NAMES, yaml_path)
+    write_dataset_yaml(processed_dir, CLASS_NAMES, yaml_path)
 
     # ------------------------------------------------------------------
     # Final summary
     # ------------------------------------------------------------------
     print_separator()
-    print(f"  Total label files : {total_labels:,}")
-    print(f"  Total kept        : {total_kept:,} annotations")
-    print(f"  Total dropped     : {total_dropped:,} annotations")
-    print(f"  Images            : untouched in raw/")
-    print(f"  Filtered labels   : {processed_dir}")
-    print(f"  dataset.yaml      : {yaml_path}")
+    print(f"  Total processed  : {total_processed:,} image-label pairs")
+    print(f"  Total skipped    : {total_skipped:,}")
+    print(f"  Processed dir    : {processed_dir}")
+    print(f"  dataset.yaml     : {yaml_path}")
     print_separator()
 
     logger.info("filter_classes complete.")
