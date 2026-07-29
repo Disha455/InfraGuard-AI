@@ -44,7 +44,12 @@ AI_ROOT: Path = PROJECT_ROOT / "ai" / "computer_vision"
 DATASET_ROOT: Path = AI_ROOT / "data"
 
 # Raw extracted dataset — never modified after download
-RAW_DATASET: Path = DATASET_ROOT / "raw"
+KAGGLE_DATASET = Path("/kaggle/input/datasets/aliabdelmenam/rdd-2022")
+
+if KAGGLE_DATASET.exists():
+    RAW_DATASET: Path = KAGGLE_DATASET
+else:
+    RAW_DATASET: Path = DATASET_ROOT / "raw"
 
 # Filtered + remapped labels (labels only — images stay in raw/)
 PROCESSED_DATASET: Path = DATASET_ROOT / "processed"
