@@ -1,0 +1,28 @@
+{
+  "image": "tmpc83im1gi.jpg",
+  "total_detections": 2,
+  "detections": [
+    {
+      "class_id": 1,
+      "class_name": "longitudinal_crack",
+      "confidence": 0.630561,
+      "bounding_box": {
+        "x1": 210.11,
+        "y1": 2.4,
+        "x2": 240.32,
+        "y2": 206.48
+      }
+    },
+    {
+      "class_id": 1,
+      "class_name": "longitudinal_crack",
+      "confidence": 0.427305,
+      "bounding_box": {
+        "x1": 188.9,
+        "y1": 291.62,
+        "x2": 211.83,
+        "y2": 511.03
+      }
+    }
+  ]
+}

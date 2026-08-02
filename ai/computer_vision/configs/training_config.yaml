@@ -127,7 +127,7 @@ training:
   # Use "cpu" only for debugging (training will be extremely slow).
   # For multi-GPU: "0,1" — not needed for this project.
   # Change when : running on a machine with multiple GPUs.
-  device: 0
+  device: cpu
 
   # Random seed for reproducibility.
   # Controls weight initialisation, data shuffling, and augmentation randomness.

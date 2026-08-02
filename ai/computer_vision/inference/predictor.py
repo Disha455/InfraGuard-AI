@@ -22,12 +22,21 @@ Output:
         confidence    : float  (0.0 – 1.0)
         bounding_box  : BoundingBox(x1, y1, x2, y2)  — absolute pixel coords
 
+    predict_and_save() additionally writes:
+        outputs/run_YYYYMMDD_HHMMSS/
+            original.jpg      — copy of the source image
+            annotated.jpg     — Ultralytics-rendered bounding boxes
+            detections.json   — structured detection results
+            summary.txt       — human-readable per-detection summary
+
 Responsibilities:
     1. Load and validate the production model exactly once.
-    2. Accept images as file paths, URL strings, or numpy / PIL objects.
-    3. Run inference with configurable confidence / IoU / device thresholds.
-    4. Convert raw Ultralytics results into project-friendly Python structures.
-    5. Never expose Ultralytics objects to callers.
+    2. Select inference device automatically (CUDA → MPS → CPU) unless
+       an explicit override is provided.
+    3. Accept images as file paths, URL strings, or numpy / PIL objects.
+    4. Run inference with configurable confidence / IoU / device thresholds.
+    5. Convert raw Ultralytics results into project-friendly Python structures.
+    6. Never expose Ultralytics objects to callers.
 
 Execution:
     # From ai/computer_vision/
@@ -37,15 +46,45 @@ Execution:
     from inference.predictor import load_predictor
     predictor = load_predictor()
     detections = predictor.predict_image("road.jpg")
-    for d in detections:
-        print(d.to_dict())
+    run_dir = predictor.predict_and_save("road.jpg")
 """
 
 import argparse
+import json
+import shutil
 import sys
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Union
+
+# ---------------------------------------------------------------------------
+# Prediction run result — returned by predict_and_save()
+# ---------------------------------------------------------------------------
+
+@dataclass
+class PredictResult:
+    """
+    In-memory result returned by :meth:`Predictor.predict_and_save`.
+
+    Carries all data the caller needs to build an API response without
+    reading anything back from disk.  The four output files are persisted
+    as a side-effect of the call, not as the primary return channel.
+
+    Attributes:
+        run_dir:              Timestamped run directory (``outputs/run_*/``).
+        detections:           Sorted list of :class:`Detection` objects.
+        total_detections:     ``len(detections)`` — cached for convenience.
+        annotated_image_path: Absolute path to ``annotated.jpg``.
+        detections_file_path: Absolute path to ``detections.json``.
+        summary_file_path:    Absolute path to ``summary.txt``.
+    """
+    run_dir:               Path
+    detections:            list["Detection"]
+    total_detections:      int
+    annotated_image_path:  Path
+    detections_file_path:  Path
+    summary_file_path:     Path
 
 import yaml
 
@@ -66,6 +105,67 @@ logger = get_logger(__name__)
 # The type is kept broad so type checkers don't require numpy/PIL imports at
 # the module level (both are optional runtime dependencies for callers).
 ImageInput = Union[str, Path, Any]
+
+
+# ===========================================================================
+# Automatic device selection
+# ===========================================================================
+
+def _select_device() -> str:
+    """
+    Probe the current environment and return the best available device string.
+
+    Priority:
+        1. CUDA GPU (``"0"`` — Ultralytics first-GPU convention)
+        2. Apple MPS (``"mps"`` — Apple Silicon GPU via PyTorch)
+        3. CPU (``"cpu"`` — always available)
+
+    The probe uses PyTorch directly so it works even if ``torch`` is not in
+    ``sys.path`` at import time (lazy probe inside the function).  Errors
+    during probing are caught and fall through to CPU so the predictor never
+    fails to initialise due to a device detection issue.
+
+    Returns:
+        Device string accepted by Ultralytics (``"0"``, ``"mps"``, or
+        ``"cpu"``).
+    """
+    try:
+        import torch  # type: ignore
+        if torch.cuda.is_available():
+            return "0"
+        if getattr(torch.backends, "mps", None) and torch.backends.mps.is_available():
+            return "mps"
+    except Exception:
+        pass
+    return "cpu"
+
+
+def _resolve_device(config_device: Any) -> str:
+    """
+    Resolve the effective inference device.
+
+    When *config_device* is the training default (integer ``0`` or string
+    ``"0"``), auto-selection runs so the predictor adapts to the deployment
+    environment without requiring ``training_config.yaml`` edits.
+
+    An explicit non-default value (``"cpu"``, ``"mps"``, ``"1"``, etc.) is
+    returned as-is so manual overrides are always honoured.
+
+    Args:
+        config_device: Device value loaded from training_config.yaml.
+
+    Returns:
+        Resolved device string.
+    """
+    # Treat the integer/string "0" (YOLO training default) as "auto"
+    if config_device in (0, "0"):
+        selected = _select_device()
+        logger.info(
+            "Device auto-selected: %s  (config value was '%s')",
+            selected, config_device,
+        )
+        return selected
+    return str(config_device)
 
 
 # ===========================================================================
@@ -380,6 +480,10 @@ class Predictor:
         # Load inference config for default thresholds
         self._inf_cfg = load_inference_config(config_path)
 
+        # Resolve device once at construction so every inference call uses
+        # the same device without re-probing on each call.
+        self._device: str = _resolve_device(self._inf_cfg["device"])
+
         # Validate + load model — raises immediately on failure
         _validate_weights(weights_path)
         self._model = _load_yolo_model(weights_path)
@@ -389,7 +493,7 @@ class Predictor:
             class_names,
             self._inf_cfg["conf_threshold"],
             self._inf_cfg["iou_threshold"],
-            self._inf_cfg["device"],
+            self._device,
         )
 
     # ------------------------------------------------------------------
@@ -477,7 +581,7 @@ class Predictor:
         """
         _conf   = conf   if conf   is not None else self._inf_cfg["conf_threshold"]
         _iou    = iou    if iou    is not None else self._inf_cfg["iou_threshold"]
-        _device = device if device is not None else self._inf_cfg["device"]
+        _device = device if device is not None else self._device
 
         # Resolve Path objects to strings so Ultralytics accepts them cleanly
         image_input: Any = str(image) if isinstance(image, Path) else image
@@ -577,6 +681,259 @@ class Predictor:
             List of dicts, one per detection.
         """
         return [d.to_dict() for d in detections]
+
+    # ------------------------------------------------------------------
+    # Private helpers for predict_and_save
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _make_run_dir(output_root: Path) -> Path:
+        """
+        Create and return a timestamped run directory.
+
+        The directory name follows the pattern ``run_YYYYMMDD_HHMMSS``.
+        The parent *output_root* is created if it does not exist.
+
+        Args:
+            output_root: Root directory that will contain all run folders.
+
+        Returns:
+            Path to the newly created run directory.
+        """
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        run_dir = output_root / f"run_{timestamp}"
+        run_dir.mkdir(parents=True, exist_ok=True)
+        return run_dir
+
+    def _save_annotated(
+        self,
+        raw_result: Any,
+        run_dir: Path,
+    ) -> Path:
+        """
+        Render bounding boxes onto the image using Ultralytics' native
+        ``result.plot()`` and save the result as ``annotated.jpg``.
+
+        ``result.plot()`` returns a BGR numpy array with all detections
+        drawn in Ultralytics' default style (boxes, labels, confidence
+        scores).  No custom OpenCV drawing is performed here.
+
+        Args:
+            raw_result: Single Ultralytics ``Results`` object.
+            run_dir:    Destination directory for the annotated image.
+
+        Returns:
+            Path to the saved ``annotated.jpg`` file.
+        """
+        try:
+            import cv2  # type: ignore
+            annotated_bgr = raw_result.plot()  # ndarray, BGR, uint8
+            dst = run_dir / "annotated.jpg"
+            cv2.imwrite(str(dst), annotated_bgr)
+        except ImportError:
+            # OpenCV not available — fall back to PIL via Ultralytics' im_array
+            from PIL import Image as _PILImage  # type: ignore
+            import numpy as _np  # type: ignore
+            # result.plot() returns BGR; convert to RGB for PIL
+            annotated_bgr = raw_result.plot()
+            annotated_rgb = annotated_bgr[..., ::-1]
+            dst = run_dir / "annotated.jpg"
+            _PILImage.fromarray(annotated_rgb).save(str(dst))
+        return dst
+
+    @staticmethod
+    def _save_detections_json(
+        image_path: Path,
+        detections: list[Detection],
+        run_dir: Path,
+    ) -> Path:
+        """
+        Write structured detection results to ``detections.json``.
+
+        Schema::
+
+            {
+              "image": "<filename>",
+              "total_detections": N,
+              "detections": [ <Detection.to_dict()>, ... ]
+            }
+
+        Args:
+            image_path:  Source image path (used for the ``"image"`` field).
+            detections:  Sorted list of :class:`Detection` objects.
+            run_dir:     Destination directory.
+
+        Returns:
+            Path to the saved ``detections.json`` file.
+        """
+        payload: dict[str, Any] = {
+            "image": image_path.name,
+            "total_detections": len(detections),
+            "detections": [d.to_dict() for d in detections],
+        }
+        dst = run_dir / "detections.json"
+        with dst.open("w", encoding="utf-8") as fh:
+            json.dump(payload, fh, indent=2, ensure_ascii=False)
+        return dst
+
+    @staticmethod
+    def _save_summary_txt(
+        image_path: Path,
+        detections: list[Detection],
+        run_dir: Path,
+    ) -> Path:
+        """
+        Write a human-readable detection summary to ``summary.txt``.
+
+        The summary lists the image name, total detection count, and one
+        line per detection showing its rank, class name, and confidence.
+
+        Args:
+            image_path:  Source image path.
+            detections:  Sorted list of :class:`Detection` objects.
+            run_dir:     Destination directory.
+
+        Returns:
+            Path to the saved ``summary.txt`` file.
+        """
+        lines: list[str] = [
+            "InfraGuard AI — Detection Summary",
+            "=" * 40,
+            f"Image            : {image_path.name}",
+            f"Total detections : {len(detections)}",
+            "",
+        ]
+
+        if detections:
+            lines.append(f"{'#':<4} {'Class':<22} {'Confidence':>10}")
+            lines.append("-" * 40)
+            for rank, det in enumerate(detections, start=1):
+                lines.append(
+                    f"{rank:<4} {det.class_name:<22} {det.confidence:>10.4f}"
+                )
+        else:
+            lines.append("No detections above the confidence threshold.")
+
+        dst = run_dir / "summary.txt"
+        dst.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        return dst
+
+    # ------------------------------------------------------------------
+    # predict_and_save — public method
+    # ------------------------------------------------------------------
+
+    def predict_and_save(
+        self,
+        image_path: str | Path,
+        output_root: str | Path = "outputs",
+        *,
+        conf: float | None = None,
+        iou: float | None = None,
+    ) -> "PredictResult":
+        """
+        Run inference on *image_path*, save all artefacts to disk, and
+        return a :class:`PredictResult` with all data available in memory.
+
+        The four saved files are for **persistence and auditing only** —
+        callers (such as the FastAPI service) must use the in-memory
+        :class:`PredictResult` fields to build responses rather than
+        reading files back from disk.
+
+        Creates::
+
+            <output_root>/run_YYYYMMDD_HHMMSS/
+                original.jpg     — verbatim copy of the source image
+                annotated.jpg    — Ultralytics-rendered bounding boxes
+                detections.json  — structured JSON (image, count, detections)
+                summary.txt      — readable class / confidence listing
+
+        Args:
+            image_path:   Path to the input image file.
+            output_root:  Parent directory for run folders.  Created
+                          automatically if absent.  Defaults to
+                          ``"outputs"`` relative to the working directory.
+            conf:         Confidence threshold override.  Uses the
+                          predictor default when ``None``.
+            iou:          IoU (NMS) threshold override.  Uses the
+                          predictor default when ``None``.
+
+        Returns:
+            :class:`PredictResult` containing the run directory, all four
+            file paths, the full detections list, and the total count.
+
+        Raises:
+            FileNotFoundError: If *image_path* does not exist.
+            RuntimeError:      If the Ultralytics forward pass fails.
+        """
+        image_path  = Path(image_path)
+        output_root = Path(output_root)
+
+        if not image_path.exists():
+            raise FileNotFoundError(
+                f"Input image not found: '{image_path}'"
+            )
+
+        _conf = conf if conf is not None else self._inf_cfg["conf_threshold"]
+        _iou  = iou  if iou  is not None else self._inf_cfg["iou_threshold"]
+
+        # ------------------------------------------------------------------
+        # Run inference and keep the raw Ultralytics result for plot()
+        # ------------------------------------------------------------------
+        try:
+            raw_results = self._model(
+                str(image_path),
+                conf=_conf,
+                iou=_iou,
+                device=self._device,
+                verbose=False,
+            )
+        except Exception as exc:
+            raise RuntimeError(
+                f"Inference failed on '{image_path}': {exc}"
+            ) from exc
+
+        raw_result = raw_results[0] if raw_results else None
+        detections = (
+            _parse_single_result(raw_result, self._class_names)
+            if raw_result is not None else []
+        )
+        detections.sort(key=lambda d: d.confidence, reverse=True)
+
+        # ------------------------------------------------------------------
+        # Create timestamped run directory
+        # ------------------------------------------------------------------
+        run_dir = self._make_run_dir(output_root)
+
+        # ------------------------------------------------------------------
+        # Save all four output files — side effects, not the return channel
+        # ------------------------------------------------------------------
+        shutil.copy2(image_path, run_dir / "original.jpg")
+
+        annotated_path = (
+            self._save_annotated(raw_result, run_dir)
+            if raw_result is not None
+            else run_dir / "annotated.jpg"
+        )
+        if raw_result is None:
+            shutil.copy2(image_path, annotated_path)
+
+        detections_path = self._save_detections_json(image_path, detections, run_dir)
+        summary_path    = self._save_summary_txt(image_path, detections, run_dir)
+
+        logger.info(
+            "predict_and_save: %d detection(s) | outputs → %s",
+            len(detections),
+            run_dir,
+        )
+
+        return PredictResult(
+            run_dir=run_dir,
+            detections=detections,
+            total_detections=len(detections),
+            annotated_image_path=annotated_path,
+            detections_file_path=detections_path,
+            summary_file_path=summary_path,
+        )
 
 
 # ===========================================================================
