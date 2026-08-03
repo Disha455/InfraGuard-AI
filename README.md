@@ -1,27 +1,100 @@
-# InfraGuard AI
+# 🚧 InfraGuard AI
 
-AI-powered Road Infrastructure Monitoring & Predictive Maintenance System.
+An AI-powered Road Damage Detection System that enables automated road inspection using Computer Vision.
 
-## Tech Stack
+The application allows users to capture or upload road images, sends them to a FastAPI backend running a trained YOLO model, and displays the detected road damages along with an annotated image and detailed inspection history.
 
-Flutter
+---
 
-FastAPI
+# Features
 
-YOLOv8
+## Mobile Application
 
-XGBoost
+- Capture road image using Camera
+- Select image from Gallery
+- Image Validation
+- AI Prediction
+- Loading Overlay
+- Detection Result Screen
+- Annotated Image Preview
+- Inspection History
+- Start New Inspection Workflow
 
-PostgreSQL + PostGIS
+---
 
-Open-Meteo API
+## Backend
 
-## Team Members
+- FastAPI REST API
+- YOLO Road Damage Detection
+- Automatic Annotated Image Generation
+- Detection JSON Generation
+- Prediction Summary
 
-Member 1
+---
 
-Member 2
+# Tech Stack
 
-Member 3
+### Mobile
 
-Member 4
+- Flutter
+- Dart
+
+### Backend
+
+- FastAPI
+- Python
+
+### AI
+
+- YOLO (Ultralytics)
+
+### Version Control
+
+- Git
+- GitHub
+
+---
+
+# Project Structure
+
+```
+InfraGuard-AI
+
+backend/
+mobile_app/
+ai/
+database/
+datasets/
+docs/
+
+README.md
+SETUP.md
+CONTRIBUTING.md
+TASKS.md
+CHANGELOG.md
+```
+
+---
+
+# Documentation
+
+Please read the following before starting development.
+
+- SETUP.md
+- CONTRIBUTING.md
+- TASKS.md
+
+---
+
+# Current Status
+
+## Current Status
+
+✅ Core Mobile Application Completed
+
+✅ Backend Prediction API Completed
+
+✅ YOLO Integration Completed
+
+🚧 AI Model Improvement & Retraining In Progress
+See TASKS.md for remaining work.
