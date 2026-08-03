@@ -1,0 +1,9 @@
+InfraGuard AI — Detection Summary
+========================================
+Image            : tmprmwb22fv.jpg
+Total detections : 2
+
+#    Class                  Confidence
+----------------------------------------
+1    longitudinal_crack         0.6306
+2    longitudinal_crack         0.4273

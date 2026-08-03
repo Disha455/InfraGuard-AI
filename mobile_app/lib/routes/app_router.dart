@@ -1,13 +1,33 @@
-// InfraGuard AI — Application Router.
-//
-// Centralises all named route definitions so that navigation calls
-// throughout the app use constants rather than raw strings.
-//
-// Planned routes:
-//   /           → HomeScreen (or PredictionPage for MVP)
-//   /result     → ResultPage (receives PredictionResult as argument)
-//   /history    → HistoryPage (past prediction runs)
-//   /settings   → SettingsPage (API base URL, thresholds)
-//
-// Preferred implementation: go_router or Navigator 2.0 with GoRoute.
-// The specific package will be added to pubspec.yaml in the next task.
+import 'package:flutter/material.dart';
+import '../features/prediction/data/models/prediction_response_model.dart';
+import '../features/prediction/presentation/pages/home_page.dart';
+import '../features/prediction/presentation/pages/result_page.dart';
+
+class AppRouter {
+  static const String home = '/';
+  static const String result = '/result';
+
+  static Route<dynamic> onGenerateRoute(RouteSettings settings) {
+    switch (settings.name) {
+      case home:
+        return MaterialPageRoute(
+          builder: (_) => const HomePage(),
+          settings: settings,
+        );
+
+      case result:
+        final predictionResult =
+            settings.arguments as PredictionResponseModel;
+        return MaterialPageRoute(
+          builder: (_) => ResultPage(result: predictionResult),
+          settings: settings,
+        );
+
+      default:
+        return MaterialPageRoute(
+          builder: (_) => const HomePage(),
+          settings: settings,
+        );
+    }
+  }
+}
