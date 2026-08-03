@@ -39,6 +39,7 @@ if str(_AI_ROOT) not in sys.path:
 
 from inference.predictor import PredictResult                                # noqa: E402
 
+from backend.config import SERVER_BASE_URL                                    # noqa: E402
 from backend.schemas.prediction import (                                      # noqa: E402
     BoundingBoxOut,
     DetectionOut,
@@ -167,10 +168,19 @@ class PredictorService:
                 for d in result.detections
             ]
 
+            # Build an HTTP URL for the annotated image so any network
+            # client (Flutter on Android, browser, etc.) can fetch it
+            # directly.  The /outputs static mount in main.py serves this
+            # directory, so the relative sub-path is all that's needed.
+            annotated_rel = result.annotated_image_path.relative_to(
+                _OUTPUTS_ROOT
+            ).as_posix()   # forward slashes required in URLs on all platforms
+            annotated_url = f"{SERVER_BASE_URL}/outputs/{annotated_rel}"
+
             return PredictionResponse(
                 status="success",
                 run_id=result.run_dir.name,
-                annotated_image=str(result.annotated_image_path),
+                annotated_image=annotated_url,
                 detections_file=str(result.detections_file_path),
                 summary_file=str(result.summary_file_path),
                 detections=detection_out_list,

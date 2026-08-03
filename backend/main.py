@@ -56,6 +56,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 # ---------------------------------------------------------------------------
 # sys.path — must run before any project import
@@ -67,6 +68,7 @@ from fastapi.middleware.cors import CORSMiddleware
 _BACKEND_DIR  = Path(__file__).resolve().parent
 _PROJECT_ROOT = _BACKEND_DIR.parent
 _AI_ROOT      = _PROJECT_ROOT / "ai" / "computer_vision"
+_OUTPUTS_ROOT = _PROJECT_ROOT / "outputs"
 
 if str(_AI_ROOT) not in sys.path:
     sys.path.insert(0, str(_AI_ROOT))
@@ -192,6 +194,18 @@ app.add_middleware(
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
+
+# ---------------------------------------------------------------------------
+# Static files — outputs directory served at /outputs
+#
+# Allows clients (Flutter app, browser) to fetch annotated images and
+# other run artefacts over HTTP.
+# The directory is created at runtime by the predictor; mount is safe to
+# register at startup even if the directory is initially empty.
+# ---------------------------------------------------------------------------
+
+_OUTPUTS_ROOT.mkdir(parents=True, exist_ok=True)
+app.mount("/outputs", StaticFiles(directory=str(_OUTPUTS_ROOT)), name="outputs")
 
 # ---------------------------------------------------------------------------
 # Routers

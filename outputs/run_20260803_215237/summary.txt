@@ -1,0 +1,8 @@
+InfraGuard AI — Detection Summary
+========================================
+Image            : tmpxtq07pxl.jpg
+Total detections : 1
+
+#    Class                  Confidence
+----------------------------------------
+1    pothole                    0.3918

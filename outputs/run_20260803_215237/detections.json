@@ -1,0 +1,17 @@
+{
+  "image": "tmpxtq07pxl.jpg",
+  "total_detections": 1,
+  "detections": [
+    {
+      "class_id": 0,
+      "class_name": "pothole",
+      "confidence": 0.391788,
+      "bounding_box": {
+        "x1": 1177.78,
+        "y1": 1804.45,
+        "x2": 1349.12,
+        "y2": 1964.16
+      }
+    }
+  ]
+}

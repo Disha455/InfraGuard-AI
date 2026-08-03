@@ -283,29 +283,64 @@ class _AnnotatedImageCard extends StatelessWidget {
 
   const _AnnotatedImageCard({required this.path});
 
+  bool get _isUrl =>
+      path.startsWith('http://') || path.startsWith('https://');
+
   @override
   Widget build(BuildContext context) {
-    final file = File(path);
-    final fileExists = file.existsSync();
-
     return Card(
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
-      child: fileExists
-          ? ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 300),
-              child: Image.file(
-                file,
-                fit: BoxFit.contain,
-                width: double.infinity,
-              ),
-            )
-          : const Padding(
-              padding: EdgeInsets.all(20),
-              child: Center(child: Text('Annotated image not available.')),
-            ),
+      child: _isUrl ? _buildNetworkImage() : _buildFileImage(),
     );
+  }
+
+  // ── Network image (served from backend over HTTP) ─────────────────────────
+
+  Widget _buildNetworkImage() {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxHeight: 300),
+      child: Image.network(
+        path,
+        fit: BoxFit.contain,
+        width: double.infinity,
+        // Show a centred spinner while the image is downloading.
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return const SizedBox(
+            height: 120,
+            child: Center(child: CircularProgressIndicator()),
+          );
+        },
+        // Show the same fallback text used for missing local files.
+        errorBuilder: (context, error, stackTrace) => const Padding(
+          padding: EdgeInsets.all(20),
+          child: Center(child: Text('Annotated image not available.')),
+        ),
+      ),
+    );
+  }
+
+  // ── Local file image (fallback for non-URL paths) ─────────────────────────
+
+  Widget _buildFileImage() {
+    final file = File(path);
+    final fileExists = file.existsSync();
+
+    return fileExists
+        ? ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 300),
+            child: Image.file(
+              file,
+              fit: BoxFit.contain,
+              width: double.infinity,
+            ),
+          )
+        : const Padding(
+            padding: EdgeInsets.all(20),
+            child: Center(child: Text('Annotated image not available.')),
+          );
   }
 }

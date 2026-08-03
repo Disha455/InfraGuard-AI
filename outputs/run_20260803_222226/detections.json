@@ -1,0 +1,28 @@
+{
+  "image": "tmpolilu0mc.jpg",
+  "total_detections": 2,
+  "detections": [
+    {
+      "class_id": 1,
+      "class_name": "longitudinal_crack",
+      "confidence": 0.480821,
+      "bounding_box": {
+        "x1": 1341.18,
+        "y1": 503.1,
+        "x2": 1519.22,
+        "y2": 1836.4
+      }
+    },
+    {
+      "class_id": 0,
+      "class_name": "pothole",
+      "confidence": 0.393962,
+      "bounding_box": {
+        "x1": 1271.06,
+        "y1": 1816.66,
+        "x2": 1525.9,
+        "y2": 2088.3
+      }
+    }
+  ]
+}

@@ -1,7 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/image_picker_service.dart';
+import '../../../../core/services/inspection_history_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/image_validator.dart';
 import '../../../prediction/data/models/prediction_response_model.dart';
@@ -18,6 +20,8 @@ class _HomePageState extends State<HomePage> {
   final ImagePickerService _imagePickerService = ImagePickerService();
   final ImageValidator _imageValidator = ImageValidator();
   final ApiService _apiService = ApiService();
+  final InspectionHistoryService _historyService =
+      InspectionHistoryService.instance;
 
   File? _selectedImage;
   bool _isLoading = false;
@@ -41,21 +45,51 @@ class _HomePageState extends State<HomePage> {
   }
 
   // ---------------------------------------------------------------------------
-  // Image selection
+  // Shared image-selection pipeline
+  //
+  // Both Gallery and Camera call this after obtaining a File? from the picker.
+  // Validation runs once here — no duplication between the two flows.
   // ---------------------------------------------------------------------------
 
-  Future<void> _onSelectImage() async {
-    final File? picked = await _imagePickerService.pickImageFromGallery();
-    if (picked == null) return;
+  Future<void> _handleSelectedImage(File? image) async {
+    if (image == null) return; // user cancelled — do nothing
 
-    final String? error = await _imageValidator.validate(picked);
+    final String? error = await _imageValidator.validate(image);
     if (error != null) {
       setState(() => _selectedImage = null);
       _showSnackBar(error, isError: true);
       return;
     }
 
-    setState(() => _selectedImage = picked);
+    setState(() => _selectedImage = image);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Image selection — Gallery
+  // ---------------------------------------------------------------------------
+
+  Future<void> _onGallery() async {
+    final File? picked = await _imagePickerService.pickImageFromGallery();
+    await _handleSelectedImage(picked);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Image selection — Camera
+  // ---------------------------------------------------------------------------
+
+  Future<void> _onCamera() async {
+    try {
+      final File? captured = await _imagePickerService.pickImageFromCamera();
+      await _handleSelectedImage(captured);
+    } on PlatformException catch (e) {
+      // Covers camera_access_denied (iOS) and equivalent Android codes.
+      final message = (e.code == 'camera_access_denied' ||
+              e.code == 'photo_access_denied')
+          ? 'Camera permission denied. '
+              'Please enable it in your device settings.'
+          : 'Camera unavailable: ${e.message ?? e.code}';
+      _showSnackBar(message, isError: true);
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -77,6 +111,13 @@ class _HomePageState extends State<HomePage> {
       debugPrint('run_id: ${result.runId}');
       debugPrint('total_detections: ${result.totalDetections}');
       debugPrint('annotated_image: ${result.annotatedImage}');
+
+      // Save to in-memory history before navigating so the entry is
+      // immediately visible when the user opens HistoryPage.
+      _historyService.addInspection(
+        result,
+        originalImagePath: _selectedImage?.path ?? '',
+      );
 
       if (mounted) {
         Navigator.pushNamed(
@@ -105,6 +146,13 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('InfraGuard AI'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.history),
+            tooltip: 'Inspection History',
+            onPressed: () => Navigator.pushNamed(context, AppRouter.history),
+          ),
+        ],
       ),
       body: Stack(
         children: [
@@ -138,9 +186,28 @@ class _HomePageState extends State<HomePage> {
 
                 const SizedBox(height: 16),
 
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _onSelectImage,
-                  child: const Text('Select Image'),
+                // ── Gallery / Camera buttons ──────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.photo_library),
+                          label: const Text('Gallery'),
+                          onPressed: _isLoading ? null : _onGallery,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.camera_alt),
+                          label: const Text('Camera'),
+                          onPressed: _isLoading ? null : _onCamera,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
 
                 const SizedBox(height: 12),

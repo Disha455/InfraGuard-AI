@@ -1,0 +1,6 @@
+InfraGuard AI — Detection Summary
+========================================
+Image            : tmpuckr47ds.jpg
+Total detections : 0
+
+No detections above the confidence threshold.
