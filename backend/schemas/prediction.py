@@ -82,6 +82,14 @@ class PredictionResponse(BaseModel):
     total_detections: int              = Field(
         ..., ge=0, description="Number of detections returned"
     )
+    severity: str = Field(
+    ..., description="Predicted road damage severity: Low or High"
+    )
+
+    severity_probability: float = Field(
+    ..., ge=0.0, le=1.0,
+    description="Model probability for High severity"
+    )
 
 
 # ---------------------------------------------------------------------------

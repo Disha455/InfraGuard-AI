@@ -5,8 +5,6 @@ import '../../../../routes/app_router.dart';
 import '../../data/models/detection_model.dart';
 import '../../data/models/prediction_response_model.dart';
 
-// ── ResultPage ────────────────────────────────────────────────────────────────
-
 class ResultPage extends StatelessWidget {
   final PredictionResponseModel result;
 
@@ -17,43 +15,42 @@ class ResultPage extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Road Damage Analysis'),
-      ),
+      appBar: AppBar(title: const Text('Road Damage Analysis')),
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 16),
         children: [
-          // ── Annotated image ───────────────────────────────────────────────
           _AnnotatedImageCard(path: result.annotatedImage),
 
           const SizedBox(height: 4),
 
-          // ── Info cards ────────────────────────────────────────────────────
-          _InfoCard(
-            icon: Icons.tag,
-            title: 'Run ID',
-            value: result.runId,
-          ),
+          _InfoCard(icon: Icons.tag, title: 'Run ID', value: result.runId),
+
           _InfoCard(
             icon: Icons.check_circle_outline,
             title: 'Status',
             value: result.status,
           ),
+
           _InfoCard(
             icon: Icons.analytics_outlined,
             title: 'Total Detections',
             value: result.totalDetections.toString(),
           ),
 
+          const SizedBox(height: 8),
+
+          _SeverityCard(
+            severity: result.severity,
+            probability: result.severityProbability,
+          ),
+
           const SizedBox(height: 4),
 
-          // ── Section header ────────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
             child: Text('Detections', style: textTheme.titleMedium),
           ),
 
-          // ── Detection cards or empty state ────────────────────────────────
           if (result.detections.isEmpty)
             Card(
               child: const Padding(
@@ -66,7 +63,6 @@ class ResultPage extends StatelessWidget {
               (detection) => _DetectionCard(detection: detection),
             ),
 
-          // ── Start New Inspection button ───────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
             child: SizedBox(
@@ -74,11 +70,12 @@ class ResultPage extends StatelessWidget {
               child: ElevatedButton.icon(
                 icon: const Icon(Icons.camera_alt),
                 label: const Text('Start New Inspection'),
-                onPressed: () => Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  AppRouter.home,
-                  (_) => false,
-                ),
+                onPressed:
+                    () => Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      AppRouter.home,
+                      (_) => false,
+                    ),
               ),
             ),
           ),
@@ -87,8 +84,6 @@ class ResultPage extends StatelessWidget {
     );
   }
 }
-
-// ── _InfoCard ─────────────────────────────────────────────────────────────────
 
 class _InfoCard extends StatelessWidget {
   final IconData icon;
@@ -117,11 +112,7 @@ class _InfoCard extends StatelessWidget {
                 color: AppColors.primaryContainer,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(
-                icon,
-                size: 22,
-                color: AppColors.onPrimaryContainer,
-              ),
+              child: Icon(icon, size: 22, color: AppColors.onPrimaryContainer),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -141,7 +132,103 @@ class _InfoCard extends StatelessWidget {
   }
 }
 
-// ── _ConfidenceBadge ──────────────────────────────────────────────────────────
+class _SeverityCard extends StatelessWidget {
+  final String severity;
+  final double probability;
+
+  const _SeverityCard({required this.severity, required this.probability});
+
+  bool get _isHigh => severity.toLowerCase() == 'high';
+
+  Color get _severityColor {
+    return _isHigh ? AppColors.error : AppColors.success;
+  }
+
+  IconData get _severityIcon {
+    return _isHigh ? Icons.warning_amber_rounded : Icons.check_circle_outline;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final percentage = (probability * 100).toStringAsFixed(1);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: _severityColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(_severityIcon, color: _severityColor, size: 25),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'AI Severity Prediction',
+                        style: textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        severity.toUpperCase(),
+                        style: textTheme.titleLarge?.copyWith(
+                          color: _severityColor,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 14),
+
+            const Divider(),
+
+            const SizedBox(height: 10),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('High Severity Probability', style: textTheme.bodyMedium),
+                Text(
+                  '$percentage%',
+                  style: textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 8),
+
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: LinearProgressIndicator(
+                value: probability.clamp(0.0, 1.0),
+                minHeight: 8,
+                backgroundColor: AppColors.surfaceVariant,
+                valueColor: AlwaysStoppedAnimation<Color>(_severityColor),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class _ConfidenceBadge extends StatelessWidget {
   final double confidence;
@@ -177,8 +264,6 @@ class _ConfidenceBadge extends StatelessWidget {
   }
 }
 
-// ── _DetectionCard ────────────────────────────────────────────────────────────
-
 class _DetectionCard extends StatelessWidget {
   final DetectionModel detection;
 
@@ -186,7 +271,11 @@ class _DetectionCard extends StatelessWidget {
 
   IconData get _damageIcon {
     final name = detection.className.toLowerCase();
-    if (name.contains('pothole')) return Icons.warning_amber_rounded;
+
+    if (name.contains('pothole')) {
+      return Icons.warning_amber_rounded;
+    }
+
     return Icons.timeline;
   }
 
@@ -201,20 +290,12 @@ class _DetectionCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Damage type row ─────────────────────────────────────────────
             Row(
               children: [
-                Icon(
-                  _damageIcon,
-                  size: 20,
-                  color: AppColors.secondary,
-                ),
+                Icon(_damageIcon, size: 20, color: AppColors.secondary),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
-                    detection.className,
-                    style: textTheme.titleSmall,
-                  ),
+                  child: Text(detection.className, style: textTheme.titleSmall),
                 ),
                 _ConfidenceBadge(confidence: detection.confidence),
               ],
@@ -222,9 +303,10 @@ class _DetectionCard extends StatelessWidget {
 
             const Divider(height: 20),
 
-            // ── Bounding box ────────────────────────────────────────────────
             Text('Bounding Box', style: textTheme.labelMedium),
+
             const SizedBox(height: 8),
+
             Row(
               children: [
                 _BboxField(label: 'X1', value: bb.x1),
@@ -239,8 +321,6 @@ class _DetectionCard extends StatelessWidget {
     );
   }
 }
-
-// ── _BboxField ────────────────────────────────────────────────────────────────
 
 class _BboxField extends StatelessWidget {
   final String label;
@@ -265,10 +345,7 @@ class _BboxField extends StatelessWidget {
           children: [
             Text(label, style: textTheme.labelSmall),
             const SizedBox(height: 2),
-            Text(
-              value.toStringAsFixed(1),
-              style: textTheme.bodySmall,
-            ),
+            Text(value.toStringAsFixed(1), style: textTheme.bodySmall),
           ],
         ),
       ),
@@ -276,28 +353,21 @@ class _BboxField extends StatelessWidget {
   }
 }
 
-// ── _AnnotatedImageCard ───────────────────────────────────────────────────────
-
 class _AnnotatedImageCard extends StatelessWidget {
   final String path;
 
   const _AnnotatedImageCard({required this.path});
 
-  bool get _isUrl =>
-      path.startsWith('http://') || path.startsWith('https://');
+  bool get _isUrl => path.startsWith('http://') || path.startsWith('https://');
 
   @override
   Widget build(BuildContext context) {
     return Card(
       clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: _isUrl ? _buildNetworkImage() : _buildFileImage(),
     );
   }
-
-  // ── Network image (served from backend over HTTP) ─────────────────────────
 
   Widget _buildNetworkImage() {
     return ConstrainedBox(
@@ -306,24 +376,25 @@ class _AnnotatedImageCard extends StatelessWidget {
         path,
         fit: BoxFit.contain,
         width: double.infinity,
-        // Show a centred spinner while the image is downloading.
         loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
+          if (loadingProgress == null) {
+            return child;
+          }
+
           return const SizedBox(
             height: 120,
             child: Center(child: CircularProgressIndicator()),
           );
         },
-        // Show the same fallback text used for missing local files.
-        errorBuilder: (context, error, stackTrace) => const Padding(
-          padding: EdgeInsets.all(20),
-          child: Center(child: Text('Annotated image not available.')),
-        ),
+        errorBuilder: (context, error, stackTrace) {
+          return const Padding(
+            padding: EdgeInsets.all(20),
+            child: Center(child: Text('Annotated image not available.')),
+          );
+        },
       ),
     );
   }
-
-  // ── Local file image (fallback for non-URL paths) ─────────────────────────
 
   Widget _buildFileImage() {
     final file = File(path);
@@ -331,16 +402,12 @@ class _AnnotatedImageCard extends StatelessWidget {
 
     return fileExists
         ? ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 300),
-            child: Image.file(
-              file,
-              fit: BoxFit.contain,
-              width: double.infinity,
-            ),
-          )
+          constraints: const BoxConstraints(maxHeight: 300),
+          child: Image.file(file, fit: BoxFit.contain, width: double.infinity),
+        )
         : const Padding(
-            padding: EdgeInsets.all(20),
-            child: Center(child: Text('Annotated image not available.')),
-          );
+          padding: EdgeInsets.all(20),
+          child: Center(child: Text('Annotated image not available.')),
+        );
   }
 }

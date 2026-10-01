@@ -112,10 +112,15 @@ KAGGLE_DATASET_SLUG: str = "aliabdelmenam/rdd-2022"
 #   2 → transverse_crack
 #   3 → alligator_crack
 CLASS_NAMES: list[str] = [
-    "pothole",
-    "longitudinal_crack",
-    "transverse_crack",
     "alligator_crack",
+    "block_crack",
+    "linear_crack",
+    "pothole",
+    "raveling",
+    "weathering",
+    "faded_marking",
+    "patch_utility_cut",
+    "lane_shoulder_dropoff",
 ]
 
 # Original RDD2022 class IDs that are removed during filtering
