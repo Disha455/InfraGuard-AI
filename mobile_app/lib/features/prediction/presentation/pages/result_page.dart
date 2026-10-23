@@ -179,7 +179,7 @@ class _SeverityCard extends StatelessWidget {
                   width: 42,
                   height: 42,
                   decoration: BoxDecoration(
-                    color: _severityColor.withOpacity(0.12),
+                    color: _severityColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(_severityIcon, size: 24, color: _severityColor),
@@ -256,9 +256,9 @@ class _ConfidenceBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: _badgeColor.withOpacity(0.12),
+        color: _badgeColor.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _badgeColor.withOpacity(0.40)),
+        border: Border.all(color: _badgeColor.withValues(alpha: 0.40)),
       ),
       child: Text(
         '$pct%',
