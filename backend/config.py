@@ -11,16 +11,16 @@ Change SERVER_BASE_URL when:
 Do NOT hardcode this value anywhere else in the backend.
 """
 
+import os
+
 # ---------------------------------------------------------------------------
 # Server base URL
 #
 # Used to build absolute HTTP URLs returned in API responses (e.g. the
 # annotated_image field in PredictionResponse).
 #
-# Must be reachable by all clients (Flutter app, browser, etc.).
-# Do NOT use 127.0.0.1 or localhost — those only resolve on the backend
-# machine itself.  Use the LAN IP so Android devices on the same Wi-Fi
-# network can fetch static assets.
+# Can be overridden via INFRAGUARD_SERVER_URL environment variable.
 # ---------------------------------------------------------------------------
 
-SERVER_BASE_URL: str = "http://10.221.38.38:8000"
+_DEFAULT_SERVER_URL = "http://10.196.252.38:8000"
+SERVER_BASE_URL: str = os.getenv("INFRAGUARD_SERVER_URL", _DEFAULT_SERVER_URL)

@@ -1,17 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Foreground location permissions — required by geolocator for GPS fixes
-         during an active inspection session.
-         ACCESS_FINE_LOCATION uses GPS hardware for accurate coordinates.
-         ACCESS_COARSE_LOCATION is declared alongside it per geolocator docs.
-         ACCESS_BACKGROUND_LOCATION is intentionally omitted — the app only
-         reads location while the user is actively performing an inspection. -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
     <application
         android:label="mobile_app"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"

@@ -93,6 +93,16 @@ class PredictionResponse(BaseModel):
             "See RiskAssessmentOut for full field documentation."
         ),
     )
+    severity: str = Field(
+        default="Low",
+        description="Predicted road damage severity: Low or High",
+    )
+    severity_probability: float = Field(
+        default=0.0,
+        ge=0.0,
+        le=1.0,
+        description="Model probability for High severity",
+    )
 
 
 # ---------------------------------------------------------------------------
