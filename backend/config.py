@@ -23,4 +23,4 @@ Do NOT hardcode this value anywhere else in the backend.
 # network can fetch static assets.
 # ---------------------------------------------------------------------------
 
-SERVER_BASE_URL: str = "http://192.168.29.107:8000"
+SERVER_BASE_URL: str = "http://10.221.38.38:8000"

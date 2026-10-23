@@ -1,4 +1,5 @@
 import '../../features/prediction/data/models/inspection_history_item.dart';
+import '../../features/prediction/data/models/inspection_location.dart';
 import '../../features/prediction/data/models/prediction_response_model.dart';
 
 /// In-memory repository for completed road damage inspections.
@@ -14,6 +15,7 @@ import '../../features/prediction/data/models/prediction_response_model.dart';
 /// ```dart
 /// final service = InspectionHistoryService.instance;
 /// service.addInspection(result, originalImagePath: path);
+/// service.addInspection(result, originalImagePath: path, location: loc);
 /// final items = service.getHistory();
 /// service.clearHistory();
 /// ```
@@ -38,15 +40,20 @@ class InspectionHistoryService {
   /// [originalImagePath] is the local path of the image the user selected
   /// (may be empty if the path is unavailable).
   /// [inspectionDate] defaults to [DateTime.now()] when omitted.
+  /// [location] is the GPS fix captured when the inspection was submitted.
+  /// May be null when location services are unavailable or denied — a null
+  /// location never prevents the entry from being recorded.
   void addInspection(
     PredictionResponseModel result, {
     required String originalImagePath,
     DateTime? inspectionDate,
+    InspectionLocation? location,
   }) {
     final item = InspectionHistoryItem(
       predictionResult: result,
       inspectionDate: inspectionDate ?? DateTime.now(),
       originalImagePath: originalImagePath,
+      location: location,
     );
     // Prepend so index 0 is always the most recent inspection.
     _items.insert(0, item);

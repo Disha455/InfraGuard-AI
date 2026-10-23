@@ -4,6 +4,7 @@ import '../../../../core/services/inspection_history_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../routes/app_router.dart';
 import '../../data/models/inspection_history_item.dart';
+import '../../data/models/inspection_location.dart';
 
 // ── HistoryPage ───────────────────────────────────────────────────────────────
 
@@ -165,6 +166,11 @@ class _HistoryCard extends StatelessWidget {
                           '${item.totalDetections == 1 ? '' : 's'}',
                     ),
 
+                    const SizedBox(height: 2),
+
+                    // ── Location status row ────────────────────────────────
+                    _LocationStatusRow(location: item.location),
+
                     const SizedBox(height: 6),
 
                     // First damage type badge
@@ -197,6 +203,163 @@ class _HistoryCard extends StatelessWidget {
         '${dt.hour.toString().padLeft(2, '0')}:'
         '${dt.minute.toString().padLeft(2, '0')}';
     return '$date  $time';
+  }
+}
+
+// ── _LocationStatusRow ────────────────────────────────────────────────────────
+
+/// Compact one-line location status shown on each history card.
+///
+/// When [location] is non-null: green icon + "Location captured" — tappable,
+/// opens [_LocationDetailDialog].
+/// When [location] is null: disabled icon + "Location unavailable" — not
+/// tappable, no fake coordinates shown.
+class _LocationStatusRow extends StatelessWidget {
+  final InspectionLocation? location;
+
+  const _LocationStatusRow({required this.location});
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final hasLocation = location != null;
+
+    final icon = hasLocation
+        ? Icons.location_on_outlined
+        : Icons.location_off_outlined;
+    final iconColor =
+        hasLocation ? AppColors.success : AppColors.textDisabled;
+    final label =
+        hasLocation ? 'Location captured' : 'Location unavailable';
+    final labelColor =
+        hasLocation ? AppColors.success : AppColors.textDisabled;
+
+    final row = Row(
+      children: [
+        Icon(icon, size: 13, color: iconColor),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Text(
+            label,
+            style: textTheme.bodySmall?.copyWith(color: labelColor),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        // Chevron hint is shown only when the row is tappable.
+        if (hasLocation)
+          Icon(
+            Icons.chevron_right,
+            size: 13,
+            color: AppColors.textSecondary,
+          ),
+      ],
+    );
+
+    if (!hasLocation) return row;
+
+    // Wrap in InkWell only when a location is available to show.
+    return InkWell(
+      borderRadius: BorderRadius.circular(4),
+      onTap: () => _showLocationDetail(context, location!),
+      child: row,
+    );
+  }
+
+  void _showLocationDetail(BuildContext context, InspectionLocation loc) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => _LocationDetailDialog(location: loc),
+    );
+  }
+}
+
+// ── _LocationDetailDialog ─────────────────────────────────────────────────────
+
+/// Full-detail dialog for a captured inspection location.
+///
+/// Shows latitude, longitude, and accuracy (when available).
+/// "Open in Maps" requires the `url_launcher` package which is not yet
+/// in this project — that button is omitted until the package is added.
+class _LocationDetailDialog extends StatelessWidget {
+  final InspectionLocation location;
+
+  const _LocationDetailDialog({required this.location});
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return AlertDialog(
+      title: Row(
+        children: [
+          const Icon(
+            Icons.location_on_outlined,
+            size: 20,
+            color: AppColors.primary,
+          ),
+          const SizedBox(width: 8),
+          Text('Inspection Location', style: textTheme.titleMedium),
+        ],
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _CoordRow(
+            label: 'Latitude',
+            value: location.latitude.toStringAsFixed(6),
+          ),
+          const SizedBox(height: 12),
+          _CoordRow(
+            label: 'Longitude',
+            value: location.longitude.toStringAsFixed(6),
+          ),
+          if (location.accuracy != null) ...[
+            const SizedBox(height: 12),
+            _CoordRow(
+              label: 'Accuracy',
+              value: '±${location.accuracy!.toStringAsFixed(0)} m',
+            ),
+          ],
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Close'),
+        ),
+      ],
+    );
+  }
+}
+
+// ── _CoordRow ─────────────────────────────────────────────────────────────────
+
+/// A labelled coordinate value row inside [_LocationDetailDialog].
+class _CoordRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _CoordRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: textTheme.labelMedium),
+        const SizedBox(width: 16),
+        Flexible(
+          child: Text(
+            value,
+            style: textTheme.bodyMedium,
+            textAlign: TextAlign.end,
+          ),
+        ),
+      ],
+    );
   }
 }
 

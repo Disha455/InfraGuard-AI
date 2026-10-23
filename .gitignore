@@ -83,3 +83,13 @@ ai/computer_vision/data/processed/
 
 # Kaggle credentials
 kaggle.json
+
+# Flutter build files
+mobile_app/build/
+mobile_app/android/build/
+
+# Generated prediction outputs
+outputs/run_*/
+
+# Temporary files
+mobile_app/build_error.txt

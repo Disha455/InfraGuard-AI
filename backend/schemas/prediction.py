@@ -10,6 +10,8 @@ so the existing simple API is not disturbed.
 
 from pydantic import BaseModel, Field
 
+from backend.schemas.risk import RiskAssessmentOut  # noqa: E402
+
 
 # ---------------------------------------------------------------------------
 # Shared sub-models
@@ -81,6 +83,15 @@ class PredictionResponse(BaseModel):
     )
     total_detections: int              = Field(
         ..., ge=0, description="Number of detections returned"
+    )
+    risk_assessment:  RiskAssessmentOut = Field(
+        ...,
+        description=(
+            "CV-based inspection risk assessment.  "
+            "Includes a 0–100 score, risk level, per-detection breakdown, "
+            "and a mandatory methodology note.  "
+            "See RiskAssessmentOut for full field documentation."
+        ),
     )
 
 

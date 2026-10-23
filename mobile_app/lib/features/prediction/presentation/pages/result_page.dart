@@ -4,6 +4,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../routes/app_router.dart';
 import '../../data/models/detection_model.dart';
 import '../../data/models/prediction_response_model.dart';
+import '../widgets/risk_assessment_card.dart';
 
 // ── ResultPage ────────────────────────────────────────────────────────────────
 
@@ -46,6 +47,10 @@ class ResultPage extends StatelessWidget {
           ),
 
           const SizedBox(height: 4),
+
+          // ── Risk assessment card (shown only when backend provides it) ──
+          if (result.riskAssessment != null)
+            RiskAssessmentCard(assessment: result.riskAssessment!),
 
           // ── Section header ────────────────────────────────────────────────
           Padding(
