@@ -13,9 +13,6 @@ __pycache__/
 # Environment
 .env
 
-# Model files (optional - we'll decide later)
-*.pt
-
 # macOS
 .DS_Store
 
@@ -25,61 +22,30 @@ Thumbs.db
 # VS Code / Cursor
 .vscode/
 
-# ==========================
-# Virtual Environment
-# ==========================
-.venv/
-
-# ==========================
-# Python
-# ==========================
-__pycache__/
-*.py[cod]
-*.pyo
-*.pyd
-
-# ==========================
-# Jupyter
-# ==========================
-.ipynb_checkpoints/
-
-# ==========================
-# Environment
-# ==========================
-.env
-
-# ==========================
-# VS Code / Cursor
-# ==========================
-.vscode/
-
-# ==========================
-# OS Files
-# ==========================
-.DS_Store
-Thumbs.db
-
-# ==========================
-# ML Models
-# ==========================
+# ML Models & Weights
 *.pt
 *.onnx
 *.tflite
 *.engine
 
-# ==========================
 # Training Outputs
-# ==========================
 models/
 runs/
 exports/
 evaluation/
 
-# ==========================
 # Dataset
-# ==========================
 ai/computer_vision/data/raw/
 ai/computer_vision/data/processed/
+ai/computer_vision/data/
 
 # Kaggle credentials
 kaggle.json
+
+# Flutter build files
+mobile_app/build/
+mobile_app/android/build/
+mobile_app/build_error.txt
+
+# Generated prediction outputs
+outputs/run_*/
