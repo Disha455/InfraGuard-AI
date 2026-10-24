@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/image_picker_service.dart';
 import '../../../../core/services/inspection_history_service.dart';
+import '../../../../core/services/location_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/image_validator.dart';
 import '../../../prediction/data/models/prediction_response_model.dart';
@@ -22,6 +23,7 @@ class _HomePageState extends State<HomePage> {
   final ApiService _apiService = ApiService();
   final InspectionHistoryService _historyService =
       InspectionHistoryService.instance;
+  final LocationService _locationService = LocationService();
 
   File? _selectedImage;
   bool _isLoading = false;
@@ -105,25 +107,41 @@ class _HomePageState extends State<HomePage> {
     setState(() => _isLoading = true);
 
     try {
-      final PredictionResponseModel result =
-          await _apiService.uploadImage(_selectedImage!);
+      // ── Start upload and GPS acquisition concurrently ─────────────────
+      //
+      // Both futures are launched here — immediately when Analyze Image is
+      // tapped — so GPS acquisition never happens during image selection.
+      //
+      // Using explicit Future variables (rather than Future.wait) preserves
+      // the full static types of each result without casting.  The loading
+      // overlay stays active until BOTH operations complete.
+      final uploadFuture   = _apiService.uploadImage(_selectedImage!);
+      final locationFuture = _locationService.getCurrentLocation();
+
+      final PredictionResponseModel result   = await uploadFuture;
+      final location                          = await locationFuture;
 
       debugPrint('run_id: ${result.runId}');
       debugPrint('total_detections: ${result.totalDetections}');
       debugPrint('annotated_image: ${result.annotatedImage}');
+      debugPrint('location: $location');
 
-      // Save to in-memory history before navigating so the entry is
-      // immediately visible when the user opens HistoryPage.
+      // Save to in-memory history before navigating.
+      // location may be null — that is expected and never blocks saving.
       _historyService.addInspection(
         result,
         originalImagePath: _selectedImage?.path ?? '',
+        location: location,
       );
 
       if (mounted) {
         Navigator.pushNamed(
           context,
           AppRouter.result,
-          arguments: result,
+          arguments: ResultPageArgs(
+            result: result,
+            location: location,
+          ),
         );
       }
     } on ApiException catch (e) {
@@ -216,6 +234,26 @@ class _HomePageState extends State<HomePage> {
                   onPressed: _isLoading ? null : _onAnalyzeImage,
                   child: const Text('Analyze Image'),
                 ),
+
+                const SizedBox(height: 12),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.location_on_outlined,
+                      size: 14,
+                      color: AppColors.textSecondary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'GPS location auto-acquired on analysis',
+                      style: textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -259,7 +297,7 @@ class _LoadingOverlay extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    'Analyzing road image...',
+                    'Analyzing road image & capturing GPS...',
                     style: textTheme.titleMedium?.copyWith(
                       color: AppColors.onPrimary,
                     ),

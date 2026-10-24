@@ -121,6 +121,7 @@ def _validate_upload(file: UploadFile) -> None:
     },
 )
 async def predict(
+    request: Request,
     service: PredictorServiceDep,
     file: UploadFile = File(
         ...,
@@ -195,7 +196,10 @@ async def predict(
     # 3. Delegate to service — all inference happens here
     # ------------------------------------------------------------------
     try:
-        response = service.run(raw_bytes, filename, conf=conf, iou=iou)
+        req_base = str(request.base_url).rstrip("/")
+        response = service.run(
+            raw_bytes, filename, base_url=req_base, conf=conf, iou=iou
+        )
     except RuntimeError as exc:
         logger.error(
             "POST /predict  inference error for '%s': %s",
