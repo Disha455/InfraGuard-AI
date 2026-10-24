@@ -42,6 +42,7 @@ from backend.services.severity_service import SeverityService                # n
 from backend.services.pothole_service import PotholeService                  # noqa: E402
 from backend.config import SERVER_BASE_URL                                    # noqa: E402
 from backend.risk.scorer import DetectionInput, RiskScorer                   # noqa: E402
+from backend.schemas.risk import RiskLevel                                   # noqa: E402
 from backend.schemas.prediction import (                                      # noqa: E402
     BoundingBoxOut,
     DetectionOut,
@@ -256,10 +257,31 @@ class PredictorService:
                 logger.warning("Risk assessment error: %s", exc)
                 risk_assessment = self._scorer.score_inspection([], None)
 
-            # If severity was not provided by XGBoost, sync with risk score
-            if self._severity_service is None and risk_assessment.score >= 50.0:
+            # ----------------------------------------------------------
+            # Harmonize severity and risk assessment
+            # ----------------------------------------------------------
+            # RiskScorer evaluates damage severity weights (e.g. pothole = 1.0,
+            # alligator crack = 0.85), detection confidence, and area coverage.
+            # Align the severity classification and probability with the risk score
+            # so the API never returns contradictory metrics (e.g., Critical risk
+            # but Low severity).
+            if risk_assessment.level in (RiskLevel.HIGH, RiskLevel.CRITICAL):
                 severity = "High"
-                severity_probability = min(1.0, risk_assessment.score / 100.0)
+                severity_probability = max(
+                    severity_probability,
+                    round(min(1.0, risk_assessment.score / 100.0), 4),
+                )
+            elif risk_assessment.level == RiskLevel.LOW:
+                severity = "Low"
+                severity_probability = min(
+                    severity_probability,
+                    round(min(1.0, risk_assessment.score / 100.0), 4),
+                )
+            else:
+                # MODERATE
+                prob_from_score = round(min(1.0, risk_assessment.score / 100.0), 4)
+                severity_probability = max(severity_probability, prob_from_score)
+                severity = "High" if severity_probability >= 0.5 else "Low"
 
             # ----------------------------------------------------------
             # 7. Convert detections to API response models

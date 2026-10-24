@@ -30,43 +30,52 @@ class ResultPage extends StatelessWidget {
           // ── Annotated Image with Bounding Boxes ───────────────────────
           _AnnotatedImageCard(path: result.annotatedImage),
 
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
 
-          _InfoCard(icon: Icons.tag, title: 'Run ID', value: result.runId),
-
-          _InfoCard(
-            icon: Icons.check_circle_outline,
-            title: 'Status',
-            value: result.status,
-          ),
-
-          // ── Inspection GPS Location ───────────────────────────────────
-          _LocationCard(location: location),
-
-          _InfoCard(
-            icon: Icons.analytics_outlined,
-            title: 'Total Detections',
-            value: result.totalDetections.toString(),
-          ),
-
-          const SizedBox(height: 8),
-
-          // ── Risk Assessment Card (CV Scorer) ─────────────────────────
+          // ── Single Unified Assessment Card ───────────────────────────
           if (result.riskAssessment != null)
-            RiskAssessmentCard(assessment: result.riskAssessment!),
-
-          // ── Severity Card (XGBoost Prediction) ───────────────────────
-          if (result.severity.isNotEmpty)
+            RiskAssessmentCard(assessment: result.riskAssessment!)
+          else if (result.severity.isNotEmpty)
             _SeverityCard(
               severity: result.severity,
               probability: result.severityProbability,
             ),
 
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
 
+          // ── Inspection GPS Location ───────────────────────────────────
+          _LocationCard(location: location),
+
+          const SizedBox(height: 6),
+
+          // ── Detections Header with Count Badge ────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            child: Text('Detections', style: textTheme.titleMedium),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Detections',
+                  style: textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${result.totalDetections} ${result.totalDetections == 1 ? 'detected' : 'detected'}',
+                    style: textTheme.labelSmall?.copyWith(
+                      color: AppColors.onPrimaryContainer,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
 
           if (result.detections.isEmpty)
@@ -81,8 +90,9 @@ class ResultPage extends StatelessWidget {
               (detection) => _DetectionCard(detection: detection),
             ),
 
+          // ── Action Button ─────────────────────────────────────────────
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
             child: SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
@@ -97,11 +107,28 @@ class ResultPage extends StatelessWidget {
               ),
             ),
           ),
+
+          // ── Subtle Run ID Footer ──────────────────────────────────────
+          if (result.runId.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4, bottom: 16),
+              child: Center(
+                child: Text(
+                  'Run ID: ${result.runId}',
+                  style: textTheme.labelSmall?.copyWith(
+                    color: AppColors.textDisabled,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 }
+
+// ── Location Card ─────────────────────────────────────────────────────────────
 
 class _LocationCard extends StatelessWidget {
   final InspectionLocation? location;
@@ -115,12 +142,12 @@ class _LocationCard extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
             Container(
-              width: 40,
-              height: 40,
+              width: 38,
+              height: 38,
               decoration: BoxDecoration(
                 color: hasLoc
                     ? AppColors.primaryContainer
@@ -129,13 +156,13 @@ class _LocationCard extends StatelessWidget {
               ),
               child: Icon(
                 hasLoc ? Icons.location_on : Icons.location_off_outlined,
-                size: 22,
+                size: 20,
                 color: hasLoc
                     ? AppColors.onPrimaryContainer
                     : AppColors.textDisabled,
               ),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -150,7 +177,7 @@ class _LocationCard extends StatelessWidget {
                       ),
                     ),
                     if (location!.accuracy != null) ...[
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 1),
                       Text(
                         'GPS Accuracy: ±${location!.accuracy!.toStringAsFixed(0)} m',
                         style: textTheme.labelSmall?.copyWith(
@@ -175,52 +202,7 @@ class _LocationCard extends StatelessWidget {
   }
 }
 
-class _InfoCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String value;
-
-  const _InfoCard({
-    required this.icon,
-    required this.title,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: AppColors.primaryContainer,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, size: 22, color: AppColors.onPrimaryContainer),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: textTheme.labelMedium),
-                  const SizedBox(height: 2),
-                  Text(value, style: textTheme.bodyMedium),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+// ── Fallback Severity Card (Used only if RiskAssessment is absent) ─────────────
 
 class _SeverityCard extends StatelessWidget {
   final String severity;
@@ -230,14 +212,16 @@ class _SeverityCard extends StatelessWidget {
 
   Color get _severityColor {
     final s = severity.toLowerCase();
-    if (s.contains('high') || s.contains('severe')) return AppColors.error;
+    if (s.contains('high') || s.contains('severe') || s.contains('critical')) {
+      return AppColors.error;
+    }
     if (s.contains('medium') || s.contains('moderate')) return AppColors.warning;
     return AppColors.success;
   }
 
   IconData get _severityIcon {
     final s = severity.toLowerCase();
-    if (s.contains('high') || s.contains('severe')) {
+    if (s.contains('high') || s.contains('severe') || s.contains('critical')) {
       return Icons.warning_amber_rounded;
     }
     return Icons.check_circle_outline;
@@ -271,7 +255,7 @@ class _SeverityCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'AI Severity Prediction',
+                        'Road Severity Level',
                         style: textTheme.titleMedium,
                       ),
                       const SizedBox(height: 4),
@@ -287,29 +271,24 @@ class _SeverityCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 14),
-            const Divider(),
-            const SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('High Severity Probability', style: textTheme.bodyMedium),
-                Text(
-                  '$percentage%',
-                  style: textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             ClipRRect(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(4),
               child: LinearProgressIndicator(
                 value: probability.clamp(0.0, 1.0),
                 minHeight: 8,
                 backgroundColor: AppColors.surfaceVariant,
                 valueColor: AlwaysStoppedAnimation<Color>(_severityColor),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                'Confidence: $percentage%',
+                style: textTheme.labelSmall?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
               ),
             ),
           ],
@@ -318,6 +297,57 @@ class _SeverityCard extends StatelessWidget {
     );
   }
 }
+
+// ── Clean Detection Card ──────────────────────────────────────────────────────
+
+class _DetectionCard extends StatelessWidget {
+  final DetectionModel detection;
+
+  const _DetectionCard({required this.detection});
+
+  IconData get _damageIcon {
+    final name = detection.className.toLowerCase();
+    if (name.contains('pothole')) return Icons.warning_amber_rounded;
+    if (name.contains('alligator')) return Icons.grid_view_rounded;
+    return Icons.timeline;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: AppColors.secondaryContainer,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(_damageIcon, size: 20, color: AppColors.secondary),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                RiskAssessmentCard.formatClassName(detection.className),
+                style: textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            _ConfidenceBadge(confidence: detection.confidence),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Confidence Badge ──────────────────────────────────────────────────────────
 
 class _ConfidenceBadge extends StatelessWidget {
   final double confidence;
@@ -353,86 +383,7 @@ class _ConfidenceBadge extends StatelessWidget {
   }
 }
 
-class _DetectionCard extends StatelessWidget {
-  final DetectionModel detection;
-
-  const _DetectionCard({required this.detection});
-
-  IconData get _damageIcon {
-    final name = detection.className.toLowerCase();
-    if (name.contains('pothole')) return Icons.warning_amber_rounded;
-    return Icons.timeline;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final bb = detection.boundingBox;
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(_damageIcon, size: 20, color: AppColors.secondary),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(detection.className, style: textTheme.titleSmall),
-                ),
-                _ConfidenceBadge(confidence: detection.confidence),
-              ],
-            ),
-            const Divider(height: 20),
-            Text('Bounding Box', style: textTheme.labelMedium),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                _BboxField(label: 'X1', value: bb.x1),
-                _BboxField(label: 'Y1', value: bb.y1),
-                _BboxField(label: 'X2', value: bb.x2),
-                _BboxField(label: 'Y2', value: bb.y2),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _BboxField extends StatelessWidget {
-  final String label;
-  final double value;
-
-  const _BboxField({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
-    return Expanded(
-      child: Container(
-        margin: const EdgeInsets.only(right: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceVariant,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(label, style: textTheme.labelSmall),
-            const SizedBox(height: 2),
-            Text(value.toStringAsFixed(1), style: textTheme.bodySmall),
-          ],
-        ),
-      ),
-    );
-  }
-}
+// ── Annotated Image Card ──────────────────────────────────────────────────────
 
 class _AnnotatedImageCard extends StatelessWidget {
   final String path;
@@ -448,7 +399,6 @@ class _AnnotatedImageCard extends StatelessWidget {
       final uri = Uri.tryParse(path);
       if (uri != null && uri.path.contains('outputs')) {
         final serverBase = ApiEndpoints.baseUrl.replaceAll(RegExp(r'/+$'), '');
-        // Extract subpath starting with /outputs/...
         final outputIdx = uri.path.indexOf('/outputs');
         if (outputIdx != -1) {
           final rel = uri.path.substring(outputIdx);
@@ -488,7 +438,7 @@ class _AnnotatedImageCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Annotated Detections (Bounding Boxes)',
+                    'Annotated Detections',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),

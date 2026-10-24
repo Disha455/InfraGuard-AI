@@ -2,28 +2,17 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/models/risk_assessment_model.dart';
 
-// ── RiskAssessmentCard ────────────────────────────────────────────────────────
-
-/// Displays the CV-based inspection risk assessment returned by POST /predict.
+/// Clean, executive road risk assessment card.
 ///
-/// Sections (top to bottom):
-///   1. Level badge + score headline   — risk level text/icon + "25.1 / 100"
-///   2. Score bar                      — LinearProgressIndicator, score / 100
-///   3. Dominant damage                — formatted class name (when non-null)
-///   4. Recommendation                 — verbatim backend text
-///   5. Score breakdown                — anchor / breadth / count detail rows
-///   6. Methodology disclaimer         — verbatim backend note, subdued style
-///
-/// All colours come from [AppColors].  No hardcoded colour values.
-/// The card uses the global [CardTheme] from [AppTheme] so margin, elevation,
-/// border-radius, and surface colour are all consistent with the rest of
-/// [ResultPage].
+/// Displays:
+///   1. Overall Risk Level badge (CRITICAL / HIGH / MODERATE / LOW)
+///   2. Unified Risk Score (0–100) with visual indicator bar
+///   3. Primary damage type detected
+///   4. Actionable maintenance recommendation
 class RiskAssessmentCard extends StatelessWidget {
   final RiskAssessmentModel assessment;
 
   const RiskAssessmentCard({super.key, required this.assessment});
-
-  // ── Colour helpers ──────────────────────────────────────────────────────────
 
   Color _levelColor(RiskLevel level) {
     switch (level) {
@@ -66,13 +55,7 @@ class RiskAssessmentCard extends StatelessWidget {
     }
   }
 
-  // ── Class name formatter ────────────────────────────────────────────────────
-
   /// Converts a snake_case damage class name to Title Case for display.
-  ///
-  /// Examples:
-  ///   longitudinal_crack → Longitudinal Crack
-  ///   pothole            → Pothole
   static String formatClassName(String raw) {
     return raw
         .split('_')
@@ -82,16 +65,12 @@ class RiskAssessmentCard extends StatelessWidget {
         .join(' ');
   }
 
-  // ── Build ───────────────────────────────────────────────────────────────────
-
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final level     = assessment.level;
-    final levelColor     = _levelColor(level);
+    final level = assessment.level;
+    final levelColor = _levelColor(level);
     final levelContainer = _levelContainerColor(level);
-
-    // Clamp score defensively to [0, 1] for the progress bar.
     final progressValue = (assessment.score / 100.0).clamp(0.0, 1.0);
 
     return Card(
@@ -100,19 +79,19 @@ class RiskAssessmentCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ── Title ───────────────────────────────────────────────────────
+            Text(
+              'Road Condition & Risk Assessment',
+              style: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 14),
 
-            // ── 1. Card header: section title ─────────────────────────────
-            Text('Inspection Risk Assessment', style: textTheme.titleSmall),
-            const SizedBox(height: 12),
-
-            // ── 2. Level badge + score headline ──────────────────────────
+            // ── Level Badge & Score ─────────────────────────────────────────
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Level badge (colour + icon + text — not colour alone)
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: levelContainer,
                     borderRadius: BorderRadius.circular(8),
@@ -121,43 +100,37 @@ class RiskAssessmentCard extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(_levelIcon(level), size: 16, color: levelColor),
+                      Icon(_levelIcon(level), size: 18, color: levelColor),
                       const SizedBox(width: 6),
                       Text(
                         level.label,
-                        style: textTheme.labelMedium?.copyWith(
+                        style: textTheme.labelLarge?.copyWith(
                           color: levelColor,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
                     ],
                   ),
                 ),
-
                 const Spacer(),
-
-                // Score headline — explicit framing avoids misreading as %
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(
-                      'Risk Score',
-                      style: textTheme.labelSmall,
-                    ),
+                    Text('Risk Score', style: textTheme.labelSmall),
                     Text(
                       '${assessment.score.toStringAsFixed(1)} / 100',
                       style: textTheme.titleMedium?.copyWith(
                         color: levelColor,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ],
                 ),
               ],
             ),
+            const SizedBox(height: 12),
 
-            const SizedBox(height: 10),
-
-            // ── 3. Score bar ──────────────────────────────────────────────
+            // ── Score Bar ───────────────────────────────────────────────────
             ClipRRect(
               borderRadius: BorderRadius.circular(4),
               child: LinearProgressIndicator(
@@ -168,20 +141,29 @@ class RiskAssessmentCard extends StatelessWidget {
               ),
             ),
 
-            // ── 4. Dominant damage ────────────────────────────────────────
-            if (assessment.dominantDamage != null) ...[
-              const SizedBox(height: 12),
+            // ── Primary Damage Identified ───────────────────────────────────
+            if (assessment.dominantDamage != null &&
+                assessment.dominantDamage!.isNotEmpty) ...[
+              const SizedBox(height: 14),
               Row(
                 children: [
-                  Icon(Icons.location_on_outlined,
-                      size: 15, color: AppColors.textSecondary),
-                  const SizedBox(width: 6),
-                  Text('Primary damage type: ', style: textTheme.labelMedium),
+                  const Icon(
+                    Icons.warning_amber_rounded,
+                    size: 16,
+                    color: AppColors.secondary,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Primary Damage: ',
+                    style: textTheme.labelMedium?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
                   Expanded(
                     child: Text(
                       formatClassName(assessment.dominantDamage!),
                       style: textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -190,155 +172,42 @@ class RiskAssessmentCard extends StatelessWidget {
               ),
             ],
 
-            const Divider(height: 24),
+            const Divider(height: 20),
 
-            // ── 5. Recommendation ─────────────────────────────────────────
+            // ── Maintenance Recommendation ──────────────────────────────────
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.assignment_outlined,
-                    size: 16, color: AppColors.textSecondary),
+                const Icon(
+                  Icons.build_circle_outlined,
+                  size: 18,
+                  color: AppColors.primary,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Recommendation', style: textTheme.labelMedium),
-                      const SizedBox(height: 4),
+                      Text(
+                        'Recommendation',
+                        style: textTheme.labelMedium?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
                       Text(
                         assessment.recommendation,
-                        style: textTheme.bodyMedium,
+                        style: textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ],
                   ),
                 ),
               ],
             ),
-
-            const SizedBox(height: 16),
-
-            // ── 6. Score breakdown ────────────────────────────────────────
-            Text('Score Breakdown', style: textTheme.labelMedium),
-            const SizedBox(height: 8),
-            _BreakdownGrid(breakdown: assessment.scoreBreakdown),
-
-            const Divider(height: 24),
-
-            // ── 7. Methodology disclaimer ─────────────────────────────────
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Icons.info_outline,
-                    size: 14, color: AppColors.textDisabled),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    assessment.methodologyNote,
-                    style: textTheme.bodySmall?.copyWith(
-                      color: AppColors.textDisabled,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ),
-              ],
-            ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-// ── _BreakdownGrid ────────────────────────────────────────────────────────────
-
-/// Renders the score_breakdown map as a 2×2 grid of labelled value chips.
-///
-/// Two rows of two chips each so labels never wrap on a phone screen.
-/// Uses the same surfaceVariant chip style as [_BboxField] in the existing
-/// detection cards for visual consistency.
-///
-/// Layout:
-///   Anchor Score  | Breadth Bonus
-///   Final Score   | Detections
-class _BreakdownGrid extends StatelessWidget {
-  final Map<String, double> breakdown;
-
-  const _BreakdownGrid({required this.breakdown});
-
-  @override
-  Widget build(BuildContext context) {
-    final topRow = [
-      _BreakdownItem(
-        label: 'Anchor Score',
-        value: _fmt(breakdown['anchor_score']),
-      ),
-      _BreakdownItem(
-        label: 'Breadth Bonus',
-        value: _fmt(breakdown['breadth_bonus']),
-      ),
-    ];
-
-    final bottomRow = [
-      _BreakdownItem(
-        label: 'Final Score',
-        value: _fmt(breakdown['final_score']),
-      ),
-      _BreakdownItem(
-        label: 'Detections',
-        value: (breakdown['detection_count']?.toInt() ?? 0).toString(),
-      ),
-    ];
-
-    return Column(
-      children: [
-        // Top row
-        Row(
-          children: topRow
-              .map((item) => Expanded(child: _BreakdownChip(item: item)))
-              .toList(),
-        ),
-        const SizedBox(height: 6),
-        // Bottom row
-        Row(
-          children: bottomRow
-              .map((item) => Expanded(child: _BreakdownChip(item: item)))
-              .toList(),
-        ),
-      ],
-    );
-  }
-
-  String _fmt(double? v) => v != null ? v.toStringAsFixed(1) : '–';
-}
-
-class _BreakdownItem {
-  final String label;
-  final String value;
-  const _BreakdownItem({required this.label, required this.value});
-}
-
-class _BreakdownChip extends StatelessWidget {
-  final _BreakdownItem item;
-  const _BreakdownChip({required this.item});
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
-    return Container(
-      margin: const EdgeInsets.only(right: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceVariant,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Text(item.label, style: textTheme.labelSmall, textAlign: TextAlign.center),
-          const SizedBox(height: 2),
-          Text(item.value, style: textTheme.bodySmall, textAlign: TextAlign.center),
-        ],
       ),
     );
   }
