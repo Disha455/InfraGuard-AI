@@ -116,7 +116,10 @@ class _HistoryCard extends StatelessWidget {
         onTap: () => Navigator.pushNamed(
           context,
           AppRouter.result,
-          arguments: item.predictionResult,
+          arguments: ResultPageArgs(
+            result: item.predictionResult,
+            location: item.location,
+          ),
         ),
         child: Padding(
           padding: const EdgeInsets.all(12),

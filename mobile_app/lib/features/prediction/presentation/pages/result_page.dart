@@ -4,13 +4,19 @@ import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../routes/app_router.dart';
 import '../../data/models/detection_model.dart';
+import '../../data/models/inspection_location.dart';
 import '../../data/models/prediction_response_model.dart';
 import '../widgets/risk_assessment_card.dart';
 
 class ResultPage extends StatelessWidget {
   final PredictionResponseModel result;
+  final InspectionLocation? location;
 
-  const ResultPage({super.key, required this.result});
+  const ResultPage({
+    super.key,
+    required this.result,
+    this.location,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +39,9 @@ class ResultPage extends StatelessWidget {
             title: 'Status',
             value: result.status,
           ),
+
+          // ── Inspection GPS Location ───────────────────────────────────
+          _LocationCard(location: location),
 
           _InfoCard(
             icon: Icons.analytics_outlined,
@@ -89,6 +98,78 @@ class ResultPage extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _LocationCard extends StatelessWidget {
+  final InspectionLocation? location;
+
+  const _LocationCard({required this.location});
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final hasLoc = location != null;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: hasLoc
+                    ? AppColors.primaryContainer
+                    : AppColors.surfaceVariant,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                hasLoc ? Icons.location_on : Icons.location_off_outlined,
+                size: 22,
+                color: hasLoc
+                    ? AppColors.onPrimaryContainer
+                    : AppColors.textDisabled,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Inspection Location', style: textTheme.labelMedium),
+                  const SizedBox(height: 2),
+                  if (hasLoc) ...[
+                    Text(
+                      '${location!.latitude.toStringAsFixed(6)}°,  ${location!.longitude.toStringAsFixed(6)}°',
+                      style: textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (location!.accuracy != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'GPS Accuracy: ±${location!.accuracy!.toStringAsFixed(0)} m',
+                        style: textTheme.labelSmall?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ] else
+                    Text(
+                      'Location unavailable (GPS disabled or permission denied)',
+                      style: textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -405,11 +486,15 @@ class _AnnotatedImageCard extends StatelessWidget {
               children: [
                 const Icon(Icons.image_outlined, size: 20, color: AppColors.primary),
                 const SizedBox(width: 8),
-                Text(
-                  'Annotated Detections (Bounding Boxes)',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                Expanded(
+                  child: Text(
+                    'Annotated Detections (Bounding Boxes)',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),

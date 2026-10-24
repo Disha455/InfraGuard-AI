@@ -138,7 +138,10 @@ class _HomePageState extends State<HomePage> {
         Navigator.pushNamed(
           context,
           AppRouter.result,
-          arguments: result,
+          arguments: ResultPageArgs(
+            result: result,
+            location: location,
+          ),
         );
       }
     } on ApiException catch (e) {
@@ -231,6 +234,26 @@ class _HomePageState extends State<HomePage> {
                   onPressed: _isLoading ? null : _onAnalyzeImage,
                   child: const Text('Analyze Image'),
                 ),
+
+                const SizedBox(height: 12),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.location_on_outlined,
+                      size: 14,
+                      color: AppColors.textSecondary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'GPS location auto-acquired on analysis',
+                      style: textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -274,7 +297,7 @@ class _LoadingOverlay extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    'Analyzing road image...',
+                    'Analyzing road image & capturing GPS...',
                     style: textTheme.titleMedium?.copyWith(
                       color: AppColors.onPrimary,
                     ),
