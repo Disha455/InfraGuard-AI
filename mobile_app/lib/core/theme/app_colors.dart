@@ -6,20 +6,20 @@ import 'package:flutter/material.dart';
 /// No widget or theme file may use a hardcoded colour value.
 abstract final class AppColors {
   // ---------------------------------------------------------------------------
-  // Brand — deep teal primary suited to infrastructure / inspection tooling
+  // Brand — professional navy blue suited to infrastructure / inspection tooling
   // ---------------------------------------------------------------------------
 
-  /// Primary brand colour — used for key actions, selected states, FABs.
-  static const Color primary = Color(0xFF00695C); // teal-800
+  /// Primary brand colour — navy blue used for key actions, app bars, buttons.
+  static const Color primary = Color(0xFF0F2B48); // deep navy-blue
 
   /// Lighter tonal variant — hover states, containers, chips.
-  static const Color primaryContainer = Color(0xFFB2DFDB); // teal-100
+  static const Color primaryContainer = Color(0xFFE2EBF5); // light navy ice
 
   /// On-primary — text / icons rendered on top of [primary].
   static const Color onPrimary = Color(0xFFFFFFFF);
 
   /// On-primary container — text / icons on [primaryContainer].
-  static const Color onPrimaryContainer = Color(0xFF00251A);
+  static const Color onPrimaryContainer = Color(0xFF07192D);
 
   // ---------------------------------------------------------------------------
   // Secondary — amber accent, conveys caution/inspection context
@@ -42,13 +42,13 @@ abstract final class AppColors {
   // ---------------------------------------------------------------------------
 
   /// Page / scaffold background.
-  static const Color background = Color(0xFFF5F5F5); // grey-100
+  static const Color background = Color(0xFFF8FAFC); // slate-50 clean background
 
   /// Card, dialog, bottom-sheet surface.
   static const Color surface = Color(0xFFFFFFFF);
 
-  /// Slightly elevated surface variant (e.g. sheet above background).
-  static const Color surfaceVariant = Color(0xFFE8F5E9); // green-50
+  /// Slightly elevated surface variant (e.g. input fill, container).
+  static const Color surfaceVariant = Color(0xFFF1F5F9); // slate-100
 
   /// On-surface — default text / icon colour.
   static const Color onSurface = Color(0xFF1C1B1F);

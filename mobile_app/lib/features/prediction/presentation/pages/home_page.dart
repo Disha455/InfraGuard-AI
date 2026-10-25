@@ -170,6 +170,15 @@ class _HomePageState extends State<HomePage> {
             tooltip: 'Inspection History',
             onPressed: () => Navigator.pushNamed(context, AppRouter.history),
           ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Log Out',
+            onPressed: () => Navigator.pushNamedAndRemoveUntil(
+              context,
+              AppRouter.welcome,
+              (_) => false,
+            ),
+          ),
         ],
       ),
       body: Stack(

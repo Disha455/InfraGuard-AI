@@ -29,7 +29,8 @@ Thumbs.db
 *.engine
 
 # Training Outputs
-models/
+/models/
+!mobile_app/lib/**/models/
 runs/
 exports/
 evaluation/
