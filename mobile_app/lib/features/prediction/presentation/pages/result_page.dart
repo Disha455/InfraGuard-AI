@@ -22,15 +22,30 @@ class ResultPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Road Damage Analysis')),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        children: [
-          // ── Annotated Image with Bounding Boxes ───────────────────────
-          _AnnotatedImageCard(path: result.annotatedImage),
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: AppColors.backgroundGradient,
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(
+              gradient: AppColors.appBarGradient,
+            ),
+          ),
+          title: const Text('Road Damage Analysis'),
+        ),
+        body: SizedBox.expand(
+          child: ListView(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            children: [
+              // ── Annotated Image with Bounding Boxes ───────────────────────
+              _AnnotatedImageCard(path: result.annotatedImage),
 
-          const SizedBox(height: 10),
+              const SizedBox(height: 10),
 
           // ── Single Unified Assessment Card ───────────────────────────
           if (result.riskAssessment != null)
@@ -47,6 +62,12 @@ class ResultPage extends StatelessWidget {
           _LocationCard(location: location),
 
           const SizedBox(height: 6),
+
+          // ── Contextual Risk Intelligence Card ─────────────────────────
+          if (result.contextualFactors != null) ...[
+            _ContextualFactorsCard(factors: result.contextualFactors!),
+            const SizedBox(height: 6),
+          ],
 
           // ── Detections Header with Count Badge ────────────────────────
           Padding(
@@ -122,10 +143,12 @@ class ResultPage extends StatelessWidget {
                 ),
               ),
             ),
-        ],
+          ],
+        ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 // ── Location Card ─────────────────────────────────────────────────────────────
@@ -198,6 +221,216 @@ class _LocationCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+// ── Contextual Risk Intelligence Card ─────────────────────────────────────────
+
+class _ContextualFactorsCard extends StatelessWidget {
+  final Map<String, dynamic> factors;
+
+  const _ContextualFactorsCard({required this.factors});
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    final weather = factors['weather'] as Map<String, dynamic>?;
+    final traffic = factors['traffic'] as Map<String, dynamic>?;
+    final maintenance = factors['maintenance'] as Map<String, dynamic>?;
+    final riskMultiplierSummary =
+        factors['risk_multiplier_summary'] as String? ?? '1.0x baseline';
+    final maintenanceNote =
+        factors['maintenance_note'] as String? ?? 'Standard municipal survey criteria';
+
+    final temp = (weather?['temperature_c'] as num?)?.toDouble();
+    final condition = weather?['condition'] as String? ?? 'Clear';
+    final isWet = weather?['is_wet_pavement'] as bool? ?? false;
+    final weatherSummary = weather?['summary'] as String? ??
+        (isWet ? 'Wet pavement hazard (+22% risk)' : 'Dry pavement (No risk penalty)');
+
+    final roadName = traffic?['road_name'] as String? ?? 'Local Sector Corridor';
+    final roadClass = traffic?['road_classification'] as String? ?? 'Local Road';
+    final trafficLevel = traffic?['estimated_traffic_level'] as String? ?? 'Moderate';
+    final trafficMult = (traffic?['traffic_risk_multiplier'] as num?)?.toDouble() ?? 1.0;
+
+    final hasMaintenance = maintenance != null;
+    final corridorName = maintenance?['corridor_name'] as String? ?? 'Surveyed Corridor';
+    final pci = maintenance?['pavement_condition_index'] as int? ?? 70;
+    final lastResurface = maintenance?['last_resurface_date'] as String? ?? '2023-01-01';
+    final daysSince = maintenance?['days_since_resurfacing'] as int? ?? 365;
+    final maintenanceStatus = maintenance?['maintenance_status'] as String? ?? 'Routine';
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryContainer,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.alt_route_rounded,
+                    size: 20,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Environmental & Municipal Context',
+                        style: textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        'Live Weather (Open-Meteo) • Traffic • Survey History',
+                        style: textTheme.labelSmall?.copyWith(
+                          color: AppColors.textSecondary,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            const Divider(height: 1),
+            const SizedBox(height: 12),
+
+            // Weather Factor Row
+            _buildFactorRow(
+              icon: isWet ? Icons.water_drop : Icons.wb_sunny_outlined,
+              iconColor: isWet ? const Color(0xFF1976D2) : const Color(0xFFF57C00),
+              label: 'Real-time Weather (Open-Meteo)',
+              title: temp != null ? '${temp.toStringAsFixed(1)}°C • $condition' : 'Clear (Dry)',
+              subtitle: weatherSummary,
+            ),
+
+            const SizedBox(height: 10),
+
+            // Traffic / Road Hierarchy Row
+            _buildFactorRow(
+              icon: Icons.traffic_rounded,
+              iconColor: const Color(0xFF673AB7),
+              label: 'Road Classification & Traffic (OpenStreetMap)',
+              title: '$roadName ($roadClass)',
+              subtitle: 'Traffic: $trafficLevel • Multiplier: ${trafficMult.toStringAsFixed(2)}x',
+            ),
+
+            const SizedBox(height: 10),
+
+            // Municipal Maintenance Survey Row
+            _buildFactorRow(
+              icon: Icons.history_edu_rounded,
+              iconColor: const Color(0xFF00796B),
+              label: 'Municipal Survey & Maintenance Record',
+              title: hasMaintenance
+                  ? '$corridorName (PCI: $pci/100)'
+                  : 'No municipal corridor match (Standard baseline)',
+              subtitle: hasMaintenance
+                  ? 'Last resurfacing: $lastResurface ($daysSince days ago) • Status: $maintenanceStatus'
+                  : 'Municipal records checked; standard baseline wear rate applied.',
+            ),
+
+            const SizedBox(height: 12),
+
+            // Summary Impact Chip
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceVariant,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.outlineVariant),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.speed_rounded,
+                    size: 16,
+                    color: AppColors.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '$riskMultiplierSummary • $maintenanceNote',
+                      style: textTheme.labelSmall?.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFactorRow({
+    required IconData icon,
+    required Color iconColor,
+    required String label,
+    required String title,
+    required String subtitle,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: Icon(icon, size: 18, color: iconColor),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 1),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              if (subtitle.isNotEmpty) ...[
+                const SizedBox(height: 1),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

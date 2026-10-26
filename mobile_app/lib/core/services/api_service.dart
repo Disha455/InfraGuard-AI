@@ -33,22 +33,55 @@ class ApiService {
     );
   }
 
+  /// Updates the runtime server URL in Dio and ApiEndpoints.
+  void updateBaseUrl(String newUrl) {
+    ApiEndpoints.setBaseUrl(newUrl);
+    _dio.options.baseUrl = ApiEndpoints.baseUrl;
+  }
+
+  /// Pings the backend health endpoint to verify connectivity.
+  Future<bool> testConnection({String? targetUrl}) async {
+    try {
+      final client = targetUrl != null
+          ? Dio(BaseOptions(
+              baseUrl: targetUrl,
+              connectTimeout: const Duration(seconds: 4),
+              receiveTimeout: const Duration(seconds: 4),
+            ))
+          : _dio;
+      final res = await client.get('/health');
+      return res.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Uploads [image] to [ApiEndpoints.predict] as a multipart request.
   ///
-  /// The field name expected by the backend is `file`.
+  /// Optionally passes [latitude] and [longitude] for real-time weather,
+  /// traffic, and municipal maintenance survey integration.
   ///
   /// Returns a parsed [PredictionResponseModel] on success.
-  ///
-  /// Throws:
-  ///   - [ApiException] when the server returns a non-2xx status code.
-  ///   - [ApiException] wrapping a connection or timeout error.
-  Future<PredictionResponseModel> uploadImage(File image) async {
-    final formData = FormData.fromMap({
+  Future<PredictionResponseModel> uploadImage(
+    File image, {
+    double? latitude,
+    double? longitude,
+  }) async {
+    final map = <String, dynamic>{
       'file': await MultipartFile.fromFile(
         image.path,
         filename: image.path.split(Platform.pathSeparator).last,
       ),
-    });
+    };
+
+    if (latitude != null) {
+      map['latitude'] = latitude;
+    }
+    if (longitude != null) {
+      map['longitude'] = longitude;
+    }
+
+    final formData = FormData.fromMap(map);
 
     try {
       final response = await _dio.post<Map<String, dynamic>>(
@@ -72,6 +105,52 @@ class ApiService {
         statusCode: e.response?.statusCode ?? 0,
         message: _dioErrorMessage(e),
       );
+    }
+  }
+
+  /// Fetches real-time aggregated metrics and recent survey logs for the Admin Dashboard.
+  Future<Map<String, dynamic>> fetchAdminAnalytics() async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        ApiEndpoints.adminAnalytics,
+      );
+
+      if (response.statusCode != null &&
+          response.statusCode! >= 200 &&
+          response.statusCode! < 300) {
+        return response.data ?? {};
+      }
+
+      throw ApiException(
+        statusCode: response.statusCode ?? 0,
+        message: 'Unexpected status ${response.statusCode} from admin analytics.',
+      );
+    } on DioException catch (e) {
+      throw ApiException(
+        statusCode: e.response?.statusCode ?? 0,
+        message: _dioErrorMessage(e),
+      );
+    }
+  }
+
+  /// Fetches the full list of recorded historical inspections from the database.
+  Future<List<Map<String, dynamic>>> fetchInspectionsList({int limit = 50}) async {
+    try {
+      final response = await _dio.get<List<dynamic>>(
+        ApiEndpoints.adminInspections,
+        queryParameters: {'limit': limit},
+      );
+
+      if (response.statusCode != null &&
+          response.statusCode! >= 200 &&
+          response.statusCode! < 300) {
+        final list = response.data ?? [];
+        return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      }
+
+      return [];
+    } catch (_) {
+      return [];
     }
   }
 

@@ -22,5 +22,5 @@ import os
 # Can be overridden via INFRAGUARD_SERVER_URL environment variable.
 # ---------------------------------------------------------------------------
 
-_DEFAULT_SERVER_URL = "http://10.196.252.38:8000"
+_DEFAULT_SERVER_URL = "http://192.168.29.107:8000"
 SERVER_BASE_URL: str = os.getenv("INFRAGUARD_SERVER_URL", _DEFAULT_SERVER_URL)

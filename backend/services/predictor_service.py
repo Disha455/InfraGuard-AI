@@ -37,16 +37,23 @@ _AI_ROOT = _PROJECT_ROOT / "ai" / "computer_vision"
 if str(_AI_ROOT) not in sys.path:
     sys.path.insert(0, str(_AI_ROOT))
 
+from datetime import datetime, timezone
 from inference.predictor import PredictResult                                # noqa: E402
 from backend.services.severity_service import SeverityService                # noqa: E402
 from backend.services.pothole_service import PotholeService                  # noqa: E402
+from backend.services.context_service import ContextService                  # noqa: E402
+from backend.services.inspection_store import inspection_store                # noqa: E402
 from backend.config import SERVER_BASE_URL                                    # noqa: E402
 from backend.risk.scorer import DetectionInput, RiskScorer                   # noqa: E402
 from backend.schemas.risk import RiskLevel                                   # noqa: E402
 from backend.schemas.prediction import (                                      # noqa: E402
     BoundingBoxOut,
+    ContextualFactorsOut,
     DetectionOut,
+    MaintenanceRecordOut,
     PredictionResponse,
+    TrafficContextOut,
+    WeatherContextOut,
 )
 
 # ---------------------------------------------------------------------------
@@ -89,6 +96,7 @@ class PredictorService:
     def __init__(self, predictor: Any) -> None:
         self._predictor = predictor
         self._scorer = RiskScorer()
+        self._context_service = ContextService()
 
         # Severity model (XGBoost)
         try:
@@ -132,6 +140,8 @@ class PredictorService:
         base_url: str | None = None,
         conf: float | None = None,
         iou: float | None = None,
+        latitude: float | None = None,
+        longitude: float | None = None,
     ) -> PredictionResponse:
         """
         Run YOLO detection, evaluate severity & risk, and return a structured response.
@@ -284,6 +294,111 @@ class PredictorService:
                 severity = "High" if severity_probability >= 0.5 else "Low"
 
             # ----------------------------------------------------------
+            # 6b. Retrieve Contextual Factors (Weather, Traffic, Maintenance)
+            # ----------------------------------------------------------
+            context = self._context_service.get_context(latitude, longitude)
+            weather_data = context["weather"]
+            traffic_data = context["traffic"]
+            maint_data = context["maintenance"]
+
+            # Contextual score modification
+            cv_base_score = risk_assessment.score
+            combined_mult = context.get("combined_multiplier", 1.0)
+            maint_pts = context.get("maintenance_points", 0.0)
+
+            if cv_base_score > 0:
+                composite_score = round(
+                    min(100.0, max(0.0, (cv_base_score * combined_mult) + maint_pts)), 1
+                )
+            else:
+                composite_score = round(min(40.0, maint_pts * 0.5), 1)
+
+            if composite_score != risk_assessment.score:
+                risk_assessment.score = composite_score
+                if composite_score > 70.0:
+                    risk_assessment.level = RiskLevel.CRITICAL
+                elif composite_score > 45.0:
+                    risk_assessment.level = RiskLevel.HIGH
+                elif composite_score > 20.0:
+                    risk_assessment.level = RiskLevel.MODERATE
+                else:
+                    risk_assessment.level = RiskLevel.LOW
+
+                # Re-sync severity if score escalated
+                if risk_assessment.level in (RiskLevel.HIGH, RiskLevel.CRITICAL):
+                    severity = "High"
+                    severity_probability = max(severity_probability, round(min(1.0, composite_score / 100.0), 4))
+
+            # Build structured contextual response
+            context_out = ContextualFactorsOut(
+                weather=WeatherContextOut(
+                    temperature_c=weather_data["temperature_c"],
+                    precipitation_mm=weather_data["precipitation_mm"],
+                    condition=weather_data["condition"],
+                    risk_impact=weather_data["risk_impact"],
+                    multiplier=weather_data["multiplier"],
+                ),
+                traffic=TrafficContextOut(
+                    road_name=traffic_data["road_name"],
+                    road_type=traffic_data["road_type"],
+                    traffic_volume=traffic_data["traffic_volume"],
+                    risk_impact=traffic_data["risk_impact"],
+                    multiplier=traffic_data["multiplier"],
+                ),
+                maintenance=MaintenanceRecordOut(
+                    corridor_id=maint_data["corridor_id"],
+                    road_name=maint_data["road_name"],
+                    last_resurfaced_date=maint_data["last_resurfaced_date"],
+                    days_since_maintenance=maint_data["days_since_maintenance"],
+                    pci_score=maint_data["pci_score"],
+                    maintenance_status=maint_data["maintenance_status"],
+                    risk_adjustment=maint_data["risk_adjustment"],
+                    notes=maint_data["notes"],
+                ),
+                combined_multiplier=combined_mult,
+                maintenance_points=maint_pts,
+            )
+
+            # ----------------------------------------------------------
+            # 6. Build URL for annotated image & Persist inspection
+            # ----------------------------------------------------------
+            effective_base_url = (base_url or SERVER_BASE_URL).rstrip("/")
+            annotated_rel = (
+                result.annotated_image_path
+                .relative_to(_OUTPUTS_ROOT)
+                .as_posix()
+            )
+            annotated_url = f"{effective_base_url}/outputs/{annotated_rel}"
+
+            coords_str = (
+                f"{latitude:.4f}° N, {longitude:.4f}° E"
+                if latitude is not None and longitude is not None
+                else "Coordinates via Telemetry"
+            )
+            inspection_record = {
+                "run_id": result.run_dir.name,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "location_name": traffic_data["road_name"],
+                "coordinates": coords_str,
+                "latitude": latitude,
+                "longitude": longitude,
+                "dominant_damage": risk_assessment.dominant_damage or "No Damage",
+                "total_detections": len(combined_detections),
+                "risk_score": risk_assessment.score,
+                "risk_level": risk_assessment.level.value,
+                "status": "Action Required" if risk_assessment.level.value in ("HIGH", "CRITICAL") else "Verified",
+                "weather_summary": weather_data["condition"],
+                "traffic_level": traffic_data["traffic_volume"],
+                "maintenance_status": maint_data["maintenance_status"],
+                "image_url": f"/outputs/{annotated_rel}",
+                "detections": [
+                    {"class_name": d.class_name, "confidence": round(d.confidence, 3)}
+                    for d in combined_detections
+                ],
+            }
+            inspection_store.add_inspection(inspection_record)
+
+            # ----------------------------------------------------------
             # 7. Convert detections to API response models
             # ----------------------------------------------------------
             detection_out_list: list[DetectionOut] = [
@@ -300,17 +415,6 @@ class PredictorService:
                 )
                 for d in combined_detections
             ]
-
-            # ----------------------------------------------------------
-            # 8. Build URL for annotated image
-            # ----------------------------------------------------------
-            effective_base_url = (base_url or SERVER_BASE_URL).rstrip("/")
-            annotated_rel = (
-                result.annotated_image_path
-                .relative_to(_OUTPUTS_ROOT)
-                .as_posix()
-            )
-            annotated_url = f"{effective_base_url}/outputs/{annotated_rel}"
 
             elapsed_ms = (time.perf_counter() - t_start) * 1000
             logger.info(
@@ -331,6 +435,10 @@ class PredictorService:
                 risk_assessment=risk_assessment,
                 severity=severity,
                 severity_probability=severity_probability,
+                contextual_factors=context_out,
+                location={"latitude": latitude, "longitude": longitude}
+                if latitude is not None and longitude is not None
+                else None,
             )
 
         finally:

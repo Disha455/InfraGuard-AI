@@ -88,6 +88,12 @@ class RecentInspectionsList extends StatelessWidget {
             _detailRow('Severity', record.severity, textTheme, valueColor: color),
             _detailRow('Risk Score', '${record.riskScore.toStringAsFixed(1)} / 100', textTheme),
             _detailRow('Status', record.status, textTheme),
+            if (record.weatherSummary != null)
+              _detailRow('Weather', record.weatherSummary!, textTheme),
+            if (record.trafficLevel != null)
+              _detailRow('Traffic', record.trafficLevel!, textTheme),
+            if (record.maintenanceStatus != null)
+              _detailRow('Maintenance', record.maintenanceStatus!, textTheme),
             _detailRow(
               'Recorded',
               '${record.timestamp.hour.toString().padLeft(2, '0')}:${record.timestamp.minute.toString().padLeft(2, '0')} • ${record.timestamp.day}/${record.timestamp.month}/${record.timestamp.year}',

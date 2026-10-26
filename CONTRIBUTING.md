@@ -1,104 +1,73 @@
-# Contribution Guide
+# 🤝 InfraGuard-AI Contribution Guidelines
 
-Please follow these rules while working on the project.
-
----
-
-# Git Workflow
-
-Never work directly on the main branch.
-
-Create your own branch.
-
-Example
-
-```bash
-git checkout -b rahul-dashboard
-```
-
-or
-
-```bash
-git checkout -b sneha-auth
-```
+Thank you for contributing to InfraGuard-AI! To maintain code quality, consistency, and zero regressions, please adhere to these guidelines.
 
 ---
 
-# Before Coding
+## 1. Branching Strategy
 
-Always pull latest changes.
+- **`main` / `develop`**: Protected branches. Never commit directly to `main` or `develop`.
+- **Feature Branches**: Branch off `develop` using standard naming conventions:
+  - `feature/<name>-<module>` (e.g. `feature/disha-admin-analytics`)
+  - `fix/<name>-<issue>` (e.g. `fix/image-thumbnail-sync`)
 
+---
+
+## 2. Pre-Commit Checklist
+
+Before staging and committing your code, you **MUST** run the automated test suites:
+
+### A. Mobile Application (Flutter)
 ```bash
-git pull origin main
+cd mobile_app
+flutter analyze     # MUST report 0 issues
+flutter test        # All 71 tests MUST pass
+```
+
+### B. Backend Services (FastAPI & Pytest)
+```powershell
+.\.venv\Scripts\python -m pytest backend/tests  # All 52 tests MUST pass
 ```
 
 ---
 
-# Commit
+## 3. Commit Message Standards
 
-```bash
-git add .
-```
-
-```bash
-git commit -m "Implemented dashboard module"
-```
+Follow the [Conventional Commits](https://www.conventionalcommits.org/) specification:
+- `feat(ui): add ambient pastel gradient and dynamic server dialog`
+- `fix(history): resolve thumbnail URL path against configured base URL`
+- `perf(backend): optimize SQLite analytics aggregation queries`
+- `docs(readme): update system architecture and database schema reference`
 
 ---
 
-# Push
+## 4. Code Standards & Architecture Guidelines
 
-```bash
-git push origin your-branch-name
-```
+### Flutter / Dart
+- **Theming**: Never hardcode colors or hex codes directly in widget trees. All colors, gradients, and elevation tokens must reference `AppColors` from `lib/core/theme/app_colors.dart`.
+- **Networking**: All HTTP communication must go through `ApiService` using dynamic endpoints from `ApiEndpoints.baseUrl`. Never hardcode raw IP strings.
+- **State & Separation of Concerns**: Keep business logic, models, and presentation widgets in their respective feature folders under `lib/features/`.
 
-Example
-
-```bash
-git push origin rahul-dashboard
-```
-
----
-
-# Do NOT
-
-- Push directly to main
-- Rename folders
-- Change API endpoints
-- Delete existing code
-- Modify prediction workflow without discussion
+### Backend / Python
+- **Type Annotations**: All functions and route handlers must include explicit type hints (`list[str]`, `dict[str, Any]`, `float | None`).
+- **Database Operations**: Perform database operations using context managers (`with self._get_connection() as conn:`) with parameterized queries to prevent SQL injection.
+- **API Models**: Define request/response payloads with Pydantic schemas in `backend/schemas/`.
 
 ---
 
-# Before Committing
+## 5. Submitting Pull Requests
 
-Run
-
-```bash
-flutter analyze
-```
-
-Fix all warnings/errors before pushing.
-
----
-
-# Communication
-
-If your work requires modifying shared files, inform the team first.
-
-Examples
-
-- AppRouter
-- ApiService
-- PredictionResponseModel
-- AppTheme
-- Backend Routes
-
----
-
-# Code Style
-
-- Keep widgets modular.
-- Avoid duplicate code.
-- Follow existing folder structure.
-- Reuse AppColors and AppTheme.
+1. Rebase your feature branch on the latest `origin/develop`:
+   ```bash
+   git fetch origin
+   git rebase origin/develop
+   ```
+2. Resolve any merge conflicts cleanly.
+3. Push to your feature branch:
+   ```bash
+   git push origin <your-branch-name>
+   ```
+4. Open a Pull Request with a clear description of:
+   - What features or fixes were implemented.
+   - Test results (confirmation that `flutter test` and `pytest` passed).
+   - Screenshots/recordings if UI changes were introduced.

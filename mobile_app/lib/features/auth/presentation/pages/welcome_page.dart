@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/server_config_dialog.dart';
 import '../../../../routes/app_router.dart';
 
 class WelcomePage extends StatelessWidget {
@@ -9,95 +10,90 @@ class WelcomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 520),
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: AppColors.backgroundGradient,
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.wifi_rounded, color: AppColors.primary),
+              tooltip: 'Server Connection Settings',
+              onPressed: () => ServerConfigDialog.show(context),
+            ),
+          ],
+        ),
+        body: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 500),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // ── Brand Header ──────────────────────────────────────────
+                  // ── Brand Header & Logo Emblem ────────────────────────────
                   Center(
                     child: Container(
-                      width: 84,
-                      height: 84,
+                      width: 64,
+                      height: 64,
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
                           colors: [AppColors.primary, Color(0xFF1E3A8A)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
-                        borderRadius: BorderRadius.circular(22),
+                        borderRadius: BorderRadius.circular(18),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.25),
-                            blurRadius: 16,
-                            offset: const Offset(0, 8),
+                            color: AppColors.primary.withValues(alpha: 0.20),
+                            blurRadius: 14,
+                            offset: const Offset(0, 6),
                           ),
                         ],
                       ),
-                      child: const Icon(
-                        Icons.shield_outlined,
-                        size: 46,
-                        color: AppColors.onPrimary,
+                      child: const Center(
+                        child: Icon(
+                          Icons.shield_outlined,
+                          size: 34,
+                          color: AppColors.onPrimary,
+                        ),
                       ),
                     ),
                   ),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 14),
 
                   Text(
                     'InfraGuard-AI',
                     textAlign: TextAlign.center,
-                    style: textTheme.headlineMedium?.copyWith(
+                    style: textTheme.headlineSmall?.copyWith(
                       color: AppColors.primary,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w900,
                       letterSpacing: -0.5,
                     ),
                   ),
 
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
 
                   Text(
                     'AI-Powered Road Infrastructure\nInspection & Risk Analytics',
                     textAlign: TextAlign.center,
-                    style: textTheme.bodyMedium?.copyWith(
+                    style: textTheme.bodySmall?.copyWith(
                       color: AppColors.textSecondary,
-                      height: 1.4,
+                      height: 1.35,
+                      fontSize: 13,
                     ),
                   ),
 
-                  const SizedBox(height: 36),
-
-                  // ── Role Selection Prompt ─────────────────────────────────
-                  Row(
-                    children: [
-                      const Expanded(
-                        child: Divider(color: AppColors.outlineVariant),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Text(
-                          'SELECT YOUR ROLE',
-                          style: textTheme.labelSmall?.copyWith(
-                            color: AppColors.textSecondary,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.1,
-                          ),
-                        ),
-                      ),
-                      const Expanded(
-                        child: Divider(color: AppColors.outlineVariant),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
 
                   // ── Option 1: Inspector Login ─────────────────────────────
                   _RoleCard(
@@ -112,7 +108,7 @@ class WelcomePage extends StatelessWidget {
                         Navigator.pushNamed(context, AppRouter.inspectorLogin),
                   ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
 
                   // ── Option 2: Admin Login ─────────────────────────────────
                   _RoleCard(
@@ -126,58 +122,15 @@ class WelcomePage extends StatelessWidget {
                     onTap: () =>
                         Navigator.pushNamed(context, AppRouter.adminLogin),
                   ),
-
-                  const SizedBox(height: 36),
-
-                  // ── Prototype / Demo Disclaimer ───────────────────────────
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceVariant,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColors.outlineVariant),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.info_outline,
-                          size: 16,
-                          color: AppColors.textSecondary,
-                        ),
-                        const SizedBox(width: 8),
-                        Flexible(
-                          child: Text(
-                            'Prototype Mode: Pre-configured credentials available for testing.',
-                            style: textTheme.bodySmall?.copyWith(
-                              color: AppColors.textSecondary,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  Text(
-                    'InfraGuard-AI Platform • Build v1.0',
-                    textAlign: TextAlign.center,
-                    style: textTheme.labelSmall?.copyWith(
-                      color: AppColors.textDisabled,
-                      fontSize: 11,
-                    ),
-                  ),
                 ],
               ),
             ),
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class _RoleCard extends StatelessWidget {
@@ -206,7 +159,7 @@ class _RoleCard extends StatelessWidget {
     return Material(
       color: AppColors.surface,
       elevation: 1,
-      shadowColor: Colors.black.withValues(alpha: 0.06),
+      shadowColor: Colors.black.withValues(alpha: 0.04),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
         side: const BorderSide(color: AppColors.outlineVariant),
@@ -215,20 +168,20 @@ class _RoleCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: Padding(
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 48,
-                height: 48,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
                   color: iconBgColor,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, size: 26, color: iconColor),
+                child: Icon(icon, size: 24, color: iconColor),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -239,48 +192,50 @@ class _RoleCard extends StatelessWidget {
                           child: Text(
                             title,
                             style: textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w800,
                               color: AppColors.textPrimary,
+                              fontSize: 15,
                             ),
                           ),
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
+                            horizontal: 6,
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.surfaceVariant,
-                            borderRadius: BorderRadius.circular(6),
+                            color: iconBgColor,
+                            borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
                             badge,
                             style: textTheme.labelSmall?.copyWith(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textSecondary,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              color: iconColor,
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     Text(
                       subtitle,
                       style: textTheme.bodySmall?.copyWith(
                         color: AppColors.textSecondary,
-                        height: 1.35,
+                        height: 1.3,
+                        fontSize: 12,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 6),
               const Padding(
-                padding: EdgeInsets.only(top: 14),
+                padding: EdgeInsets.only(top: 12),
                 child: Icon(
                   Icons.arrow_forward_ios_rounded,
-                  size: 16,
+                  size: 14,
                   color: AppColors.textSecondary,
                 ),
               ),
