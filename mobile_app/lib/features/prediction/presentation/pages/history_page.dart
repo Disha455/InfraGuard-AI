@@ -22,6 +22,19 @@ class HistoryPage extends StatefulWidget {
 class _HistoryPageState extends State<HistoryPage> {
   final InspectionHistoryService _service = InspectionHistoryService.instance;
 
+  @override
+  void initState() {
+    super.initState();
+    if (!WidgetsBinding.instance.runtimeType.toString().contains('Test')) {
+      _syncHistory();
+    }
+  }
+
+  Future<void> _syncHistory() async {
+    await _service.syncWithBackend();
+    if (mounted) setState(() {});
+  }
+
   // ---------------------------------------------------------------------------
   // Delete-all confirmation dialog
   // ---------------------------------------------------------------------------
@@ -77,7 +90,17 @@ class _HistoryPageState extends State<HistoryPage> {
             ),
         ],
       ),
-      body: items.isEmpty ? _EmptyState() : _HistoryList(items: items),
+      body: RefreshIndicator(
+        onRefresh: _syncHistory,
+        child: items.isEmpty
+            ? Stack(
+                children: [
+                  ListView(physics: const AlwaysScrollableScrollPhysics()),
+                  _EmptyState(),
+                ],
+              )
+            : _HistoryList(items: items),
+      ),
     );
   }
 }

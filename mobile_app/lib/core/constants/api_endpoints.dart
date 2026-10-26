@@ -17,4 +17,7 @@ abstract final class ApiEndpoints {
 
   /// GET — returns real-time admin analytics and inspection metrics.
   static const String adminAnalytics = '/admin/analytics';
+
+  /// GET — returns all recorded historical inspections from the database.
+  static const String adminInspections = '/admin/inspections';
 }

@@ -1,14 +1,14 @@
-"""
-InfraGuard AI — Persistent Inspection Store & Analytics Engine
+"""InfraGuard AI — Persistent SQLite Inspection Store & Analytics Engine.
 
-Maintains inspection history across sessions and computes real-time
-administrative metrics for the Admin Analytics Dashboard.
+Maintains inspection history across sessions in a persistent SQLite database (infraguard.db)
+and computes real-time administrative metrics for the Admin Analytics Dashboard.
 """
 
 from __future__ import annotations
 
 import json
 import logging
+import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -16,60 +16,171 @@ from typing import Any
 logger = logging.getLogger("infraguard.store")
 
 _DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+_DB_PATH = _DATA_DIR / "infraguard.db"
 _INSPECTIONS_FILE = _DATA_DIR / "inspections.json"
 
 
 class InspectionStore:
-    """Manages persistent inspection records and generates admin dashboard analytics."""
+    """Manages persistent SQLite inspection records and generates live admin dashboard analytics."""
 
-    def __init__(self, storage_path: Path = _INSPECTIONS_FILE) -> None:
-        self.storage_path = storage_path
+    def __init__(
+        self,
+        db_path: Path = _DB_PATH,
+        legacy_json_path: Path = _INSPECTIONS_FILE,
+    ) -> None:
+        self.db_path = db_path
+        self.legacy_json_path = legacy_json_path
         self._ensure_storage()
 
+    def _get_connection(self) -> sqlite3.Connection:
+        conn = sqlite3.connect(str(self.db_path))
+        conn.row_factory = sqlite3.Row
+        return conn
+
     def _ensure_storage(self) -> None:
-        self.storage_path.parent.mkdir(parents=True, exist_ok=True)
-        if not self.storage_path.exists():
-            # Seed with verified municipal baseline records
-            initial = self._generate_baseline_seed()
-            self._save_raw(initial)
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        with self._get_connection() as conn:
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS inspections (
+                    run_id TEXT PRIMARY KEY,
+                    timestamp TEXT NOT NULL,
+                    location_name TEXT,
+                    coordinates TEXT,
+                    latitude REAL,
+                    longitude REAL,
+                    dominant_damage TEXT,
+                    total_detections INTEGER DEFAULT 0,
+                    risk_score REAL DEFAULT 0.0,
+                    risk_level TEXT DEFAULT 'LOW',
+                    status TEXT DEFAULT 'Verified',
+                    weather_summary TEXT,
+                    traffic_level TEXT,
+                    maintenance_status TEXT,
+                    detections_json TEXT,
+                    image_url TEXT
+                )
+                """
+            )
+            conn.commit()
 
-    def _load_raw(self) -> list[dict[str, Any]]:
-        try:
-            with open(self.storage_path, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception as e:
-            logger.warning("Error reading inspection store: %s", e)
-            return []
+            # Check if database has records; if empty, migrate from inspections.json or seed
+            count = conn.execute("SELECT COUNT(*) FROM inspections").fetchone()[0]
+            if count == 0:
+                seeded_items = self._load_initial_records()
+                for item in seeded_items:
+                    self._insert_row(conn, item)
+                conn.commit()
+                logger.info("Initialized SQLite database with %d initial inspections.", len(seeded_items))
 
-    def _save_raw(self, items: list[dict[str, Any]]) -> None:
-        try:
-            with open(self.storage_path, "w", encoding="utf-8") as f:
-                json.dump(items, f, indent=2, default=str)
-        except Exception as e:
-            logger.error("Error writing inspection store: %s", e)
+    def _load_initial_records(self) -> list[dict[str, Any]]:
+        # 1. Try migrating existing inspections.json
+        if self.legacy_json_path.exists():
+            try:
+                with open(self.legacy_json_path, "r", encoding="utf-8") as f:
+                    records = json.load(f)
+                    if isinstance(records, list) and records:
+                        return records
+            except Exception as e:
+                logger.warning("Could not read legacy json: %s", e)
+
+        # 2. Otherwise seed verified baseline records
+        return self._generate_baseline_seed()
+
+    def _insert_row(self, conn: sqlite3.Connection, item: dict[str, Any]) -> None:
+        detections = item.get("detections", [])
+        dets_json = json.dumps(detections) if isinstance(detections, list) else str(detections)
+
+        conn.execute(
+            """
+            INSERT OR REPLACE INTO inspections (
+                run_id, timestamp, location_name, coordinates, latitude, longitude,
+                dominant_damage, total_detections, risk_score, risk_level, status,
+                weather_summary, traffic_level, maintenance_status, detections_json, image_url
+            ) VALUES (
+                :run_id, :timestamp, :location_name, :coordinates, :latitude, :longitude,
+                :dominant_damage, :total_detections, :risk_score, :risk_level, :status,
+                :weather_summary, :traffic_level, :maintenance_status, :detections_json, :image_url
+            )
+            """,
+            {
+                "run_id": item.get("run_id", f"run_{int(datetime.now().timestamp())}"),
+                "timestamp": item.get("timestamp", datetime.now(timezone.utc).isoformat()),
+                "location_name": item.get("location_name", "Field Inspection Zone"),
+                "coordinates": item.get("coordinates", "GPS Telemetry"),
+                "latitude": item.get("latitude"),
+                "longitude": item.get("longitude"),
+                "dominant_damage": item.get("dominant_damage", "Pothole"),
+                "total_detections": int(item.get("total_detections", len(detections))),
+                "risk_score": float(item.get("risk_score", 0.0)),
+                "risk_level": str(item.get("risk_level", "LOW")).upper(),
+                "status": item.get("status", "Verified"),
+                "weather_summary": item.get("weather_summary", "Nominal"),
+                "traffic_level": item.get("traffic_level", "Moderate"),
+                "maintenance_status": item.get("maintenance_status", "Active"),
+                "detections_json": dets_json,
+                "image_url": item.get("image_url", ""),
+            },
+        )
 
     def add_inspection(self, record: dict[str, Any]) -> None:
-        """Appends a new inspection record and persists it to disk."""
-        items = self._load_raw()
-        items.insert(0, record)  # Newest first
-        # Keep maximum 500 records
-        if len(items) > 500:
-            items = items[:500]
-        self._save_raw(items)
-        logger.info("Persisted inspection run_id='%s' to store", record.get("run_id"))
+        """Appends a new inspection record to the SQLite database and syncs to JSON."""
+        with self._get_connection() as conn:
+            self._insert_row(conn, record)
+            conn.commit()
 
-    def get_all(self, limit: int = 50) -> list[dict[str, Any]]:
-        items = self._load_raw()
-        return items[:limit]
+        logger.info("Persisted inspection run_id='%s' to SQLite database.", record.get("run_id"))
+        self._sync_to_legacy_json()
+
+    def _sync_to_legacy_json(self) -> None:
+        try:
+            records = self.get_all(limit=500)
+            with open(self.legacy_json_path, "w", encoding="utf-8") as f:
+                json.dump(records, f, indent=2, default=str)
+        except Exception as e:
+            logger.warning("Error syncing to inspections.json: %s", e)
+
+    def get_all(self, limit: int = 100) -> list[dict[str, Any]]:
+        """Returns the most recent inspections ordered newest-first."""
+        with self._get_connection() as conn:
+            cursor = conn.execute(
+                "SELECT * FROM inspections ORDER BY timestamp DESC LIMIT ?",
+                (limit,),
+            )
+            rows = cursor.fetchall()
+
+        results = []
+        for r in rows:
+            d = dict(r)
+            try:
+                d["detections"] = json.loads(d.get("detections_json") or "[]")
+            except Exception:
+                d["detections"] = []
+            results.append(d)
+        return results
 
     def get_analytics(self) -> dict[str, Any]:
-        """Calculates live analytics across all recorded inspections."""
-        items = self._load_raw()
+        """Calculates live real-time analytics across all inspections in the SQLite database."""
+        with self._get_connection() as conn:
+            total = conn.execute("SELECT COUNT(*) FROM inspections").fetchone()[0]
+            damaged = conn.execute("SELECT COUNT(*) FROM inspections WHERE total_detections > 0").fetchone()[0]
+            high_risk = conn.execute(
+                "SELECT COUNT(*) FROM inspections WHERE UPPER(risk_level) IN ('HIGH', 'CRITICAL')"
+            ).fetchone()[0]
+            pending = conn.execute(
+                """
+                SELECT COUNT(*) FROM inspections
+                WHERE status LIKE '%Action%'
+                   OR status LIKE '%Pending%'
+                   OR status LIKE '%Review%'
+                   OR status LIKE '%Assigned%'
+                """
+            ).fetchone()[0]
 
-        total = len(items)
-        damaged = 0
-        high_risk = 0
-        pending = 0
+            # Fetch all rows to accurately compute real-time category & severity breakdown
+            rows = conn.execute(
+                "SELECT run_id, risk_level, dominant_damage, detections_json FROM inspections"
+            ).fetchall()
 
         categories = {
             "Potholes": 0,
@@ -85,43 +196,32 @@ class InspectionStore:
             "Critical": 0,
         }
 
-        recent_records = []
-
-        for item in items:
-            total_dets = item.get("total_detections", 0)
-            if total_dets > 0:
-                damaged += 1
-
-            level = str(item.get("risk_level", "LOW")).upper()
-            if level in ("HIGH", "CRITICAL"):
-                high_risk += 1
-
-            # Count severities
+        for row in rows:
+            level = str(row["risk_level"] or "LOW").upper()
             norm_sev = self._normalize_severity(level)
             severities[norm_sev] = severities.get(norm_sev, 0) + 1
 
-            # Count categories from detection list
-            detections = item.get("detections", [])
-            for d in detections:
-                cname = d.get("class_name", "")
-                norm_cat = self._normalize_category(cname)
+            # Count categories from detections_json or dominant_damage
+            dets_json = row["detections_json"]
+            counted_from_dets = False
+            if dets_json:
+                try:
+                    dets = json.loads(dets_json)
+                    if isinstance(dets, list) and dets:
+                        for d in dets:
+                            cname = d.get("class_name", "")
+                            norm_cat = self._normalize_category(cname)
+                            categories[norm_cat] = categories.get(norm_cat, 0) + 1
+                        counted_from_dets = True
+                except Exception:
+                    pass
+
+            if not counted_from_dets:
+                dom = row["dominant_damage"] or "Pothole"
+                norm_cat = self._normalize_category(dom)
                 categories[norm_cat] = categories.get(norm_cat, 0) + 1
 
-            # Check status
-            status = item.get("status", "Verified")
-            if "Action" in status or "Pending" in status or "Review" in status:
-                pending += 1
-
-            recent_records.append(item)
-
-        # Ensure non-empty categories so charts render nicely
-        if sum(categories.values()) == 0:
-            categories = {
-                "Potholes": 4,
-                "Longitudinal Cracks": 3,
-                "Transverse Cracks": 2,
-                "Alligator Cracks": 2,
-            }
+        recent_records = self.get_all(limit=25)
 
         return {
             "total_inspections": total,
@@ -130,20 +230,29 @@ class InspectionStore:
             "pending_inspections": max(1, pending),
             "damage_category_counts": categories,
             "severity_counts": severities,
-            "recent_inspections": recent_records[:15],
+            "recent_inspections": recent_records,
         }
 
     @staticmethod
     def _normalize_category(name: str) -> str:
+        """Accurately maps road distress classes to standardized municipal categories."""
         lower = name.lower()
-        if "pothole" in lower:
+        if "pothole" in lower or "rutting" in lower:
             return "Potholes"
-        if "alligator" in lower:
+        if (
+            "alligator" in lower
+            or "block" in lower
+            or "crocodile" in lower
+            or "fatigue" in lower
+            or "network" in lower
+        ):
             return "Alligator Cracks"
-        if "transverse" in lower:
+        if "transverse" in lower or "lateral" in lower or "cross" in lower:
             return "Transverse Cracks"
-        if "longitudinal" in lower:
+        if "longitudinal" in lower or "linear" in lower or "line" in lower:
             return "Longitudinal Cracks"
+        if "crack" in lower:
+            return "Alligator Cracks"
         return "Potholes"
 
     @staticmethod

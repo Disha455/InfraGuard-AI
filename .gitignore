@@ -50,3 +50,6 @@ mobile_app/build_error.txt
 
 # Generated prediction outputs
 outputs/run_*/
+
+# Local SQLite databases
+backend/data/*.db

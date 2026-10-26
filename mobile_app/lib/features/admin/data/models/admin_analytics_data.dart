@@ -267,10 +267,20 @@ class AdminAnalyticsData {
 
   static String _formatDamageName(String raw) {
     final lower = raw.toLowerCase();
-    if (lower.contains('pothole')) return 'Potholes';
-    if (lower.contains('alligator')) return 'Alligator Cracks';
-    if (lower.contains('transverse')) return 'Transverse Cracks';
-    if (lower.contains('longitudinal') || lower.contains('linear')) return 'Longitudinal Cracks';
+    if (lower.contains('pothole') || lower.contains('rutting')) return 'Potholes';
+    if (lower.contains('alligator') ||
+        lower.contains('block') ||
+        lower.contains('crocodile') ||
+        lower.contains('fatigue')) {
+      return 'Alligator Cracks';
+    }
+    if (lower.contains('transverse') || lower.contains('lateral') || lower.contains('cross')) {
+      return 'Transverse Cracks';
+    }
+    if (lower.contains('longitudinal') || lower.contains('linear') || lower.contains('line')) {
+      return 'Longitudinal Cracks';
+    }
+    if (lower.contains('crack')) return 'Alligator Cracks';
     return 'Potholes';
   }
 

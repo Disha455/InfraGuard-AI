@@ -110,6 +110,27 @@ class ApiService {
     }
   }
 
+  /// Fetches the full list of recorded historical inspections from the database.
+  Future<List<Map<String, dynamic>>> fetchInspectionsList({int limit = 50}) async {
+    try {
+      final response = await _dio.get<List<dynamic>>(
+        ApiEndpoints.adminInspections,
+        queryParameters: {'limit': limit},
+      );
+
+      if (response.statusCode != null &&
+          response.statusCode! >= 200 &&
+          response.statusCode! < 300) {
+        final list = response.data ?? [];
+        return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      }
+
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
   // Converts a [DioException] into a user-readable message.
   String _dioErrorMessage(DioException e) {
     switch (e.type) {
