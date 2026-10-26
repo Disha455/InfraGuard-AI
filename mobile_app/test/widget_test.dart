@@ -10,7 +10,6 @@ import 'package:mobile_app/features/prediction/data/models/inspection_location.d
 import 'package:mobile_app/features/prediction/data/models/prediction_response_model.dart';
 import 'package:mobile_app/features/prediction/data/models/risk_assessment_model.dart';
 import 'package:mobile_app/features/prediction/presentation/pages/history_page.dart';
-
 import 'package:mobile_app/features/prediction/presentation/pages/home_page.dart';
 
 void main() {
@@ -94,7 +93,6 @@ void main() {
     expect(find.text('High-Risk Roads'), findsOneWidget);
     expect(find.text('Pending Inspections'), findsOneWidget);
   });
-
   // ── RiskAssessmentModel parsing tests ──────────────────────────────────────
 
   group('RiskLevel.fromString', () {
