@@ -16,7 +16,7 @@ import logging
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile, status
+from fastapi import APIRouter, File, Form, HTTPException, Query, Request, UploadFile, status
 
 from backend.dependencies import PredictorServiceDep
 from backend.schemas.prediction import ErrorResponse, PredictionResponse
@@ -145,6 +145,14 @@ async def predict(
             "Defaults to the value in training_config.yaml."
         ),
     ),
+    latitude: float | None = Form(
+        default=None,
+        description="GPS latitude acquired by device",
+    ),
+    longitude: float | None = Form(
+        default=None,
+        description="GPS longitude acquired by device",
+    ),
 ) -> PredictionResponse:
     """
     Detect road damage in the uploaded image.
@@ -198,7 +206,13 @@ async def predict(
     try:
         req_base = str(request.base_url).rstrip("/")
         response = service.run(
-            raw_bytes, filename, base_url=req_base, conf=conf, iou=iou
+            raw_bytes,
+            filename,
+            base_url=req_base,
+            conf=conf,
+            iou=iou,
+            latitude=latitude,
+            longitude=longitude,
         )
     except RuntimeError as exc:
         logger.error(

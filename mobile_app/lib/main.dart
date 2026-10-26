@@ -15,7 +15,7 @@ class InfraGuardApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'InfraGuard AI',
       theme: AppTheme.lightTheme,
-      initialRoute: AppRouter.home,
+      initialRoute: AppRouter.welcome,
       onGenerateRoute: AppRouter.onGenerateRoute,
     );
   }

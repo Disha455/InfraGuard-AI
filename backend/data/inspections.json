@@ -1,0 +1,416 @@
+[
+  {
+    "run_id": "run_20261026_194533",
+    "timestamp": "2026-10-26T14:15:34.686624+00:00",
+    "location_name": "Vinayaka Layout",
+    "coordinates": "13.1088\u00b0 N, 77.5788\u00b0 E",
+    "latitude": 13.1087714,
+    "longitude": 77.578762,
+    "dominant_damage": "block_crack",
+    "total_detections": 1,
+    "risk_score": 33.1,
+    "risk_level": "MODERATE",
+    "status": "Verified",
+    "weather_summary": "Dry & Clear (20.8\u00b0C)",
+    "traffic_level": "Moderate to Low (Local Access)",
+    "maintenance_status": "CRITICALLY OVERDUE FOR RECONSTRUCTION",
+    "detections_json": "[{\"class_name\": \"block_crack\", \"confidence\": 0.277}]",
+    "image_url": "/outputs/run_20261026_194533/annotated.jpg",
+    "detections": [
+      {
+        "class_name": "block_crack",
+        "confidence": 0.277
+      }
+    ]
+  },
+  {
+    "run_id": "run_20261026_194500",
+    "timestamp": "2026-10-26T14:15:01.917237+00:00",
+    "location_name": "Vinayaka Layout",
+    "coordinates": "13.1089\u00b0 N, 77.5788\u00b0 E",
+    "latitude": 13.1088555,
+    "longitude": 77.578766,
+    "dominant_damage": "pothole",
+    "total_detections": 2,
+    "risk_score": 100.0,
+    "risk_level": "CRITICAL",
+    "status": "Action Required",
+    "weather_summary": "Dry & Clear (21.0\u00b0C)",
+    "traffic_level": "Moderate to Low (Local Access)",
+    "maintenance_status": "CRITICALLY OVERDUE FOR RECONSTRUCTION",
+    "detections_json": "[{\"class_name\": \"pothole\", \"confidence\": 0.78}, {\"class_name\": \"linear_crack\", \"confidence\": 0.273}]",
+    "image_url": "/outputs/run_20261026_194500/annotated.jpg",
+    "detections": [
+      {
+        "class_name": "pothole",
+        "confidence": 0.78
+      },
+      {
+        "class_name": "linear_crack",
+        "confidence": 0.273
+      }
+    ]
+  },
+  {
+    "run_id": "run_20261026_193941",
+    "timestamp": "2026-10-26T14:09:43.476720+00:00",
+    "location_name": "Vinayaka Layout",
+    "coordinates": "13.1088\u00b0 N, 77.5787\u00b0 E",
+    "latitude": 13.108781,
+    "longitude": 77.5787499,
+    "dominant_damage": "pothole",
+    "total_detections": 2,
+    "risk_score": 100.0,
+    "risk_level": "CRITICAL",
+    "status": "Action Required",
+    "weather_summary": "Dry & Clear (21.0\u00b0C)",
+    "traffic_level": "Moderate to Low (Local Access)",
+    "maintenance_status": "CRITICALLY OVERDUE FOR RECONSTRUCTION",
+    "detections_json": "[{\"class_name\": \"pothole\", \"confidence\": 0.78}, {\"class_name\": \"linear_crack\", \"confidence\": 0.273}]",
+    "image_url": "/outputs/run_20261026_193941/annotated.jpg",
+    "detections": [
+      {
+        "class_name": "pothole",
+        "confidence": 0.78
+      },
+      {
+        "class_name": "linear_crack",
+        "confidence": 0.273
+      }
+    ]
+  },
+  {
+    "run_id": "TEST-INSP-001",
+    "timestamp": "2026-10-26T13:37:44.098979+00:00",
+    "location_name": "MG Road Corridor",
+    "coordinates": "GPS Telemetry",
+    "latitude": 12.9716,
+    "longitude": 77.5946,
+    "dominant_damage": "pothole",
+    "total_detections": 2,
+    "risk_score": 75.5,
+    "risk_level": "HIGH",
+    "status": "Verified",
+    "weather_summary": "24\u00b0C \u2022 Fair",
+    "traffic_level": "High (Commercial & Transit)",
+    "maintenance_status": "Maintenance Overdue",
+    "detections_json": "[]",
+    "image_url": "",
+    "detections": []
+  },
+  {
+    "run_id": "run_20261026_182114",
+    "timestamp": "2026-10-26T12:51:16.333082+00:00",
+    "location_name": "Vinayaka Layout",
+    "coordinates": "13.1088\u00b0 N, 77.5788\u00b0 E",
+    "latitude": 13.1088424,
+    "longitude": 77.5787635,
+    "dominant_damage": "block_crack",
+    "total_detections": 2,
+    "risk_score": 58.5,
+    "risk_level": "HIGH",
+    "status": "Action Required",
+    "weather_summary": "Dry & Clear (22.6\u00b0C)",
+    "traffic_level": "Moderate to Low (Local Access)",
+    "maintenance_status": "CRITICALLY OVERDUE FOR RECONSTRUCTION",
+    "detections_json": "[{\"class_name\": \"block_crack\", \"confidence\": 0.631}, {\"class_name\": \"block_crack\", \"confidence\": 0.427}]",
+    "image_url": "/outputs/run_20261026_182114/annotated.jpg",
+    "detections": [
+      {
+        "class_name": "block_crack",
+        "confidence": 0.631
+      },
+      {
+        "class_name": "block_crack",
+        "confidence": 0.427
+      }
+    ]
+  },
+  {
+    "run_id": "run_20261026_180704",
+    "timestamp": "2026-10-26T12:37:05.773583+00:00",
+    "location_name": "Vinayaka Layout",
+    "coordinates": "13.1088\u00b0 N, 77.5787\u00b0 E",
+    "latitude": 13.1088239,
+    "longitude": 77.5787387,
+    "dominant_damage": "alligator_crack",
+    "total_detections": 2,
+    "risk_score": 46.6,
+    "risk_level": "HIGH",
+    "status": "Action Required",
+    "weather_summary": "Dry & Clear (23.1\u00b0C)",
+    "traffic_level": "Moderate to Low (Local Access)",
+    "maintenance_status": "CRITICALLY OVERDUE FOR RECONSTRUCTION",
+    "detections_json": "[{\"class_name\": \"alligator_crack\", \"confidence\": 0.35}, {\"class_name\": \"linear_crack\", \"confidence\": 0.252}]",
+    "image_url": "/outputs/run_20261026_180704/annotated.jpg",
+    "detections": [
+      {
+        "class_name": "alligator_crack",
+        "confidence": 0.35
+      },
+      {
+        "class_name": "linear_crack",
+        "confidence": 0.252
+      }
+    ]
+  },
+  {
+    "run_id": "run_20261026_180629",
+    "timestamp": "2026-10-26T12:36:31.420444+00:00",
+    "location_name": "Vinayaka Layout",
+    "coordinates": "13.1088\u00b0 N, 77.5787\u00b0 E",
+    "latitude": 13.1087666,
+    "longitude": 77.5787458,
+    "dominant_damage": "No Damage",
+    "total_detections": 0,
+    "risk_score": 8.0,
+    "risk_level": "LOW",
+    "status": "Verified",
+    "weather_summary": "Dry & Clear (23.1\u00b0C)",
+    "traffic_level": "Moderate to Low (Local Access)",
+    "maintenance_status": "CRITICALLY OVERDUE FOR RECONSTRUCTION",
+    "detections_json": "[]",
+    "image_url": "/outputs/run_20261026_180629/annotated.jpg",
+    "detections": []
+  },
+  {
+    "run_id": "run_20261026_175235",
+    "timestamp": "2026-10-26T12:22:36.263764+00:00",
+    "location_name": "Vinayaka Layout",
+    "coordinates": "13.1089\u00b0 N, 77.5787\u00b0 E",
+    "latitude": 13.1089208,
+    "longitude": 77.5787,
+    "dominant_damage": "block_crack",
+    "total_detections": 2,
+    "risk_score": 58.5,
+    "risk_level": "HIGH",
+    "status": "Action Required",
+    "weather_summary": "Dry & Clear (23.6\u00b0C)",
+    "traffic_level": "Moderate to Low (Local Access)",
+    "maintenance_status": "CRITICALLY OVERDUE FOR RECONSTRUCTION",
+    "detections_json": "[{\"class_name\": \"block_crack\", \"confidence\": 0.631}, {\"class_name\": \"block_crack\", \"confidence\": 0.427}]",
+    "image_url": "/outputs/run_20261026_175235/annotated.jpg",
+    "detections": [
+      {
+        "class_name": "block_crack",
+        "confidence": 0.631
+      },
+      {
+        "class_name": "block_crack",
+        "confidence": 0.427
+      }
+    ]
+  },
+  {
+    "run_id": "run_20261026_175200",
+    "timestamp": "2026-10-26T12:22:02.132363+00:00",
+    "location_name": "Vinayaka Layout",
+    "coordinates": "13.1089\u00b0 N, 77.5788\u00b0 E",
+    "latitude": 13.1088541,
+    "longitude": 77.5787651,
+    "dominant_damage": "block_crack",
+    "total_detections": 1,
+    "risk_score": 40.1,
+    "risk_level": "MODERATE",
+    "status": "Verified",
+    "weather_summary": "Dry & Clear (23.6\u00b0C)",
+    "traffic_level": "Moderate to Low (Local Access)",
+    "maintenance_status": "CRITICALLY OVERDUE FOR RECONSTRUCTION",
+    "detections_json": "[{\"class_name\": \"block_crack\", \"confidence\": 0.386}]",
+    "image_url": "/outputs/run_20261026_175200/annotated.jpg",
+    "detections": [
+      {
+        "class_name": "block_crack",
+        "confidence": 0.386
+      }
+    ]
+  },
+  {
+    "run_id": "run_20261026_175120",
+    "timestamp": "2026-10-26T12:21:21.668703+00:00",
+    "location_name": "Vinayaka Layout",
+    "coordinates": "13.1089\u00b0 N, 77.5787\u00b0 E",
+    "latitude": 13.1088599,
+    "longitude": 77.5787486,
+    "dominant_damage": "block_crack",
+    "total_detections": 1,
+    "risk_score": 41.8,
+    "risk_level": "MODERATE",
+    "status": "Verified",
+    "weather_summary": "Dry & Clear (23.6\u00b0C)",
+    "traffic_level": "Moderate to Low (Local Access)",
+    "maintenance_status": "CRITICALLY OVERDUE FOR RECONSTRUCTION",
+    "detections_json": "[{\"class_name\": \"block_crack\", \"confidence\": 0.417}]",
+    "image_url": "/outputs/run_20261026_175120/annotated.jpg",
+    "detections": [
+      {
+        "class_name": "block_crack",
+        "confidence": 0.417
+      }
+    ]
+  },
+  {
+    "run_id": "run_20261026_175000",
+    "timestamp": "2026-10-26T12:20:01.714763+00:00",
+    "location_name": "Vinayaka Layout",
+    "coordinates": "13.1089\u00b0 N, 77.5787\u00b0 E",
+    "latitude": 13.1088995,
+    "longitude": 77.5787485,
+    "dominant_damage": "pothole",
+    "total_detections": 2,
+    "risk_score": 100.0,
+    "risk_level": "CRITICAL",
+    "status": "Action Required",
+    "weather_summary": "Dry & Clear (23.6\u00b0C)",
+    "traffic_level": "Moderate to Low (Local Access)",
+    "maintenance_status": "CRITICALLY OVERDUE FOR RECONSTRUCTION",
+    "detections_json": "[{\"class_name\": \"pothole\", \"confidence\": 0.78}, {\"class_name\": \"linear_crack\", \"confidence\": 0.273}]",
+    "image_url": "/outputs/run_20261026_175000/annotated.jpg",
+    "detections": [
+      {
+        "class_name": "pothole",
+        "confidence": 0.78
+      },
+      {
+        "class_name": "linear_crack",
+        "confidence": 0.273
+      }
+    ]
+  },
+  {
+    "run_id": "run_20261026_174930",
+    "timestamp": "2026-10-26T12:19:31.072005+00:00",
+    "location_name": "Field Survey Zone",
+    "coordinates": "Coordinates via Telemetry",
+    "latitude": null,
+    "longitude": null,
+    "dominant_damage": "pothole",
+    "total_detections": 2,
+    "risk_score": 100.0,
+    "risk_level": "CRITICAL",
+    "status": "Action Required",
+    "weather_summary": "Normal / Dry Pavement",
+    "traffic_level": "Moderate (Urban Commuter)",
+    "maintenance_status": "CRITICALLY OVERDUE FOR RECONSTRUCTION",
+    "detections_json": "[{\"class_name\": \"pothole\", \"confidence\": 0.78}, {\"class_name\": \"linear_crack\", \"confidence\": 0.273}]",
+    "image_url": "/outputs/run_20261026_174930/annotated.jpg",
+    "detections": [
+      {
+        "class_name": "pothole",
+        "confidence": 0.78
+      },
+      {
+        "class_name": "linear_crack",
+        "confidence": 0.273
+      }
+    ]
+  },
+  {
+    "run_id": "MUNI-BLR-891",
+    "timestamp": "2026-10-26T09:39:38.349633+00:00",
+    "location_name": "Outer Ring Road (Sector 4)",
+    "coordinates": "12.9352\u00b0 N, 77.6245\u00b0 E",
+    "latitude": 12.9352,
+    "longitude": 77.6245,
+    "dominant_damage": "pothole",
+    "total_detections": 3,
+    "risk_score": 88.5,
+    "risk_level": "CRITICAL",
+    "status": "Action Required",
+    "weather_summary": "Dry & Clear (27.2\u00b0C)",
+    "traffic_level": "Very High (Freight & Bus Transit)",
+    "maintenance_status": "CRITICALLY OVERDUE (1016 Days)",
+    "detections_json": "[{\"class_name\": \"pothole\", \"confidence\": 0.89}, {\"class_name\": \"pothole\", \"confidence\": 0.76}, {\"class_name\": \"alligator_crack\", \"confidence\": 0.65}]",
+    "image_url": "",
+    "detections": [
+      {
+        "class_name": "pothole",
+        "confidence": 0.89
+      },
+      {
+        "class_name": "pothole",
+        "confidence": 0.76
+      },
+      {
+        "class_name": "alligator_crack",
+        "confidence": 0.65
+      }
+    ]
+  },
+  {
+    "run_id": "MUNI-BLR-890",
+    "timestamp": "2026-10-26T09:39:38.349633+00:00",
+    "location_name": "Highway 44 - North Arterial",
+    "coordinates": "13.0827\u00b0 N, 77.5877\u00b0 E",
+    "latitude": 13.0827,
+    "longitude": 77.5877,
+    "dominant_damage": "alligator_crack",
+    "total_detections": 2,
+    "risk_score": 74.0,
+    "risk_level": "HIGH",
+    "status": "Crew Assigned",
+    "weather_summary": "Dry (26.5\u00b0C)",
+    "traffic_level": "High (Interstate Logistics)",
+    "maintenance_status": "OVERDUE (850 Days)",
+    "detections_json": "[{\"class_name\": \"alligator_crack\", \"confidence\": 0.82}, {\"class_name\": \"linear_crack\", \"confidence\": 0.58}]",
+    "image_url": "",
+    "detections": [
+      {
+        "class_name": "alligator_crack",
+        "confidence": 0.82
+      },
+      {
+        "class_name": "linear_crack",
+        "confidence": 0.58
+      }
+    ]
+  },
+  {
+    "run_id": "MUNI-BLR-889",
+    "timestamp": "2026-10-26T09:39:38.349633+00:00",
+    "location_name": "MG Road Central Corridor",
+    "coordinates": "12.9716\u00b0 N, 77.5946\u00b0 E",
+    "latitude": 12.9716,
+    "longitude": 77.5946,
+    "dominant_damage": "transverse_crack",
+    "total_detections": 1,
+    "risk_score": 46.2,
+    "risk_level": "MODERATE",
+    "status": "Under Review",
+    "weather_summary": "Clear (28.0\u00b0C)",
+    "traffic_level": "High (Commercial & Passenger)",
+    "maintenance_status": "ROUTINE MONITORING",
+    "detections_json": "[{\"class_name\": \"transverse_crack\", \"confidence\": 0.71}]",
+    "image_url": "",
+    "detections": [
+      {
+        "class_name": "transverse_crack",
+        "confidence": 0.71
+      }
+    ]
+  },
+  {
+    "run_id": "MUNI-BLR-888",
+    "timestamp": "2026-10-26T09:39:38.349633+00:00",
+    "location_name": "Indiranagar 100ft Boulevard",
+    "coordinates": "12.9784\u00b0 N, 77.6408\u00b0 E",
+    "latitude": 12.9784,
+    "longitude": 77.6408,
+    "dominant_damage": "linear_crack",
+    "total_detections": 1,
+    "risk_score": 18.0,
+    "risk_level": "LOW",
+    "status": "Routine Log",
+    "weather_summary": "Clear (27.5\u00b0C)",
+    "traffic_level": "Moderate (Urban Commuter)",
+    "maintenance_status": "SATISFACTORY (PCI: 84.0)",
+    "detections_json": "[{\"class_name\": \"linear_crack\", \"confidence\": 0.45}]",
+    "image_url": "",
+    "detections": [
+      {
+        "class_name": "linear_crack",
+        "confidence": 0.45
+      }
+    ]
+  }
+]

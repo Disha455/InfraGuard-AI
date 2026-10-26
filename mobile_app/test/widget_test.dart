@@ -10,14 +10,28 @@ import 'package:mobile_app/features/prediction/data/models/inspection_location.d
 import 'package:mobile_app/features/prediction/data/models/prediction_response_model.dart';
 import 'package:mobile_app/features/prediction/data/models/risk_assessment_model.dart';
 import 'package:mobile_app/features/prediction/presentation/pages/history_page.dart';
+import 'package:mobile_app/features/prediction/presentation/pages/home_page.dart';
 
 void main() {
-  // ── Home page smoke test ────────────────────────────────────────────────────
-  // Updated to match current UI: 'Select Image' was replaced by
-  // 'Gallery' and 'Camera' buttons in a previous task.
-
-  testWidgets('Home page renders correctly', (WidgetTester tester) async {
+  // ── Welcome & Role Selection smoke test ────────────────────────────────────
+  testWidgets('Welcome / Role Selection page renders when app opens',
+      (WidgetTester tester) async {
     await tester.pumpWidget(const InfraGuardApp());
+
+    expect(find.text('InfraGuard-AI'), findsOneWidget);
+    expect(find.text('Inspector Login'), findsOneWidget);
+    expect(find.text('Admin Login'), findsOneWidget);
+  });
+
+  // ── Home page smoke test ────────────────────────────────────────────────────
+  testWidgets('Home page renders correctly when loaded',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        theme: null,
+        home: HomePage(),
+      ),
+    );
 
     expect(find.text('InfraGuard AI'), findsOneWidget);
     expect(find.text('Road Damage Detection'), findsOneWidget);
@@ -26,6 +40,59 @@ void main() {
     expect(find.text('Analyze Image'), findsOneWidget);
   });
 
+  // ── Inspector Login flow test ──────────────────────────────────────────────
+  testWidgets('Inspector flow navigates from Welcome to HomePage',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(const InfraGuardApp());
+
+    // Tap Inspector Login
+    await tester.tap(find.text('Inspector Login'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Field Inspector Portal'), findsOneWidget);
+    expect(find.text('Sign In as Inspector'), findsOneWidget);
+
+    // Scroll to and tap Sign In
+    final signInBtn = find.text('Sign In as Inspector');
+    await tester.ensureVisible(signInBtn);
+    await tester.pumpAndSettle();
+    await tester.tap(signInBtn);
+    await tester.pump(const Duration(milliseconds: 350));
+    await tester.pump(const Duration(milliseconds: 400));
+
+    // Reached the existing HomePage
+    expect(find.text('Road Damage Detection'), findsOneWidget);
+    expect(find.text('Gallery'), findsOneWidget);
+    expect(find.text('Camera'), findsOneWidget);
+  });
+
+  // ── Admin Login flow test ──────────────────────────────────────────────────
+  testWidgets('Admin flow navigates from Welcome to Admin Dashboard',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(const InfraGuardApp());
+
+    // Tap Admin Login
+    await tester.tap(find.text('Admin Login'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Admin Analytics Portal'), findsOneWidget);
+    expect(find.text('Sign In as Administrator'), findsOneWidget);
+
+    // Scroll to and tap Sign In
+    final adminBtn = find.text('Sign In as Administrator');
+    await tester.ensureVisible(adminBtn);
+    await tester.pumpAndSettle();
+    await tester.tap(adminBtn);
+    await tester.pump(const Duration(milliseconds: 350));
+    await tester.pumpAndSettle();
+
+    // Reached the Admin Dashboard
+    expect(find.text('Administrator Analytics Dashboard'), findsOneWidget);
+    expect(find.text('Total Inspections'), findsOneWidget);
+    expect(find.text('Damaged Roads'), findsOneWidget);
+    expect(find.text('High-Risk Roads'), findsOneWidget);
+    expect(find.text('Pending Inspections'), findsOneWidget);
+  });
   // ── RiskAssessmentModel parsing tests ──────────────────────────────────────
 
   group('RiskLevel.fromString', () {

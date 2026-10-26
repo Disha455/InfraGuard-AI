@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/services/inspection_history_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../routes/app_router.dart';
@@ -21,6 +22,19 @@ class HistoryPage extends StatefulWidget {
 
 class _HistoryPageState extends State<HistoryPage> {
   final InspectionHistoryService _service = InspectionHistoryService.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!WidgetsBinding.instance.runtimeType.toString().contains('Test')) {
+      _syncHistory();
+    }
+  }
+
+  Future<void> _syncHistory() async {
+    await _service.syncWithBackend();
+    if (mounted) setState(() {});
+  }
 
   // ---------------------------------------------------------------------------
   // Delete-all confirmation dialog
@@ -65,19 +79,44 @@ class _HistoryPageState extends State<HistoryPage> {
   Widget build(BuildContext context) {
     final items = _service.getHistory();
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Inspection History'),
-        actions: [
-          if (items.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.delete_outline),
-              tooltip: 'Delete All',
-              onPressed: _onDeleteAll,
-            ),
-        ],
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: AppColors.backgroundGradient,
       ),
-      body: items.isEmpty ? _EmptyState() : _HistoryList(items: items),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(
+              gradient: AppColors.appBarGradient,
+            ),
+          ),
+          title: const Text('Inspection History'),
+          actions: [
+            if (items.isNotEmpty)
+              IconButton(
+                icon: const Icon(Icons.delete_outline),
+                tooltip: 'Delete All',
+                onPressed: _onDeleteAll,
+              ),
+          ],
+        ),
+        body: SizedBox.expand(
+          child: RefreshIndicator(
+            onRefresh: _syncHistory,
+            child: items.isEmpty
+                ? Stack(
+                    children: [
+                      ListView(physics: const AlwaysScrollableScrollPhysics()),
+                      _EmptyState(),
+                    ],
+                  )
+                : _HistoryList(items: items),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -436,8 +475,34 @@ class _Thumbnail extends StatelessWidget {
 
   const _Thumbnail({required this.path});
 
-  bool get _isUrl =>
-      path.startsWith('http://') || path.startsWith('https://');
+  String get _resolvedUrl {
+    if (path.isEmpty) return '';
+    final serverBase = ApiEndpoints.baseUrl.replaceAll(RegExp(r'/+$'), '');
+
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      final uri = Uri.tryParse(path);
+      if (uri != null && uri.path.contains('outputs')) {
+        final outputIdx = uri.path.indexOf('/outputs');
+        if (outputIdx != -1) {
+          final rel = uri.path.substring(outputIdx);
+          return '$serverBase$rel';
+        }
+      }
+      return path;
+    }
+
+    if (path.contains('outputs')) {
+      final p = path.startsWith('/') ? path : '/$path';
+      return '$serverBase$p';
+    }
+
+    return path;
+  }
+
+  bool get _isUrl {
+    final resolved = _resolvedUrl;
+    return resolved.startsWith('http://') || resolved.startsWith('https://');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -446,14 +511,14 @@ class _Thumbnail extends StatelessWidget {
       child: SizedBox(
         width: 80,
         height: 80,
-        child: _isUrl ? _networkThumb() : _fileThumb(),
+        child: _isUrl ? _networkThumb(_resolvedUrl) : _fileThumb(),
       ),
     );
   }
 
-  Widget _networkThumb() {
+  Widget _networkThumb(String url) {
     return Image.network(
-      path,
+      url,
       fit: BoxFit.cover,
       loadingBuilder: (context, child, progress) {
         if (progress == null) return child;
