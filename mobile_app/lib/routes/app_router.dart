@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import '../features/admin/presentation/pages/admin_dashboard_page.dart';
+import '../features/auth/presentation/pages/admin_login_page.dart';
+import '../features/auth/presentation/pages/inspector_login_page.dart';
+import '../features/auth/presentation/pages/welcome_page.dart';
 import '../features/prediction/data/models/inspection_location.dart';
 import '../features/prediction/data/models/prediction_response_model.dart';
 import '../features/prediction/presentation/pages/history_page.dart';
@@ -14,15 +18,43 @@ class ResultPageArgs {
 }
 
 class AppRouter {
-  static const String home = '/';
+  static const String welcome = '/';
+  static const String inspectorLogin = '/inspector-login';
+  static const String adminLogin = '/admin-login';
+  static const String home = '/home';
+  static const String adminDashboard = '/admin-dashboard';
   static const String result = '/result';
   static const String history = '/history';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
+      case welcome:
+        return MaterialPageRoute(
+          builder: (_) => const WelcomePage(),
+          settings: settings,
+        );
+
+      case inspectorLogin:
+        return MaterialPageRoute(
+          builder: (_) => const InspectorLoginPage(),
+          settings: settings,
+        );
+
+      case adminLogin:
+        return MaterialPageRoute(
+          builder: (_) => const AdminLoginPage(),
+          settings: settings,
+        );
+
       case home:
         return MaterialPageRoute(
           builder: (_) => const HomePage(),
+          settings: settings,
+        );
+
+      case adminDashboard:
+        return MaterialPageRoute(
+          builder: (_) => const AdminDashboardPage(),
           settings: settings,
         );
 
@@ -57,7 +89,7 @@ class AppRouter {
 
       default:
         return MaterialPageRoute(
-          builder: (_) => const HomePage(),
+          builder: (_) => const WelcomePage(),
           settings: settings,
         );
     }
