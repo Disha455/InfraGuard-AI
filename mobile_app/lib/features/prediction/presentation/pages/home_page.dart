@@ -115,11 +115,13 @@ class _HomePageState extends State<HomePage> {
       // Using explicit Future variables (rather than Future.wait) preserves
       // the full static types of each result without casting.  The loading
       // overlay stays active until BOTH operations complete.
-      final uploadFuture   = _apiService.uploadImage(_selectedImage!);
-      final locationFuture = _locationService.getCurrentLocation();
-
-      final PredictionResponseModel result   = await uploadFuture;
-      final location                          = await locationFuture;
+      // ── Acquire GPS location and upload image ────────────────────────
+      final location = await _locationService.getCurrentLocation();
+      final PredictionResponseModel result = await _apiService.uploadImage(
+        _selectedImage!,
+        latitude: location?.latitude,
+        longitude: location?.longitude,
+      );
 
       debugPrint('run_id: ${result.runId}');
       debugPrint('total_detections: ${result.totalDetections}');

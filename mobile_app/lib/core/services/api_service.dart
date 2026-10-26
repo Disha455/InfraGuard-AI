@@ -35,20 +35,30 @@ class ApiService {
 
   /// Uploads [image] to [ApiEndpoints.predict] as a multipart request.
   ///
-  /// The field name expected by the backend is `file`.
+  /// Optionally passes [latitude] and [longitude] for real-time weather,
+  /// traffic, and municipal maintenance survey integration.
   ///
   /// Returns a parsed [PredictionResponseModel] on success.
-  ///
-  /// Throws:
-  ///   - [ApiException] when the server returns a non-2xx status code.
-  ///   - [ApiException] wrapping a connection or timeout error.
-  Future<PredictionResponseModel> uploadImage(File image) async {
-    final formData = FormData.fromMap({
+  Future<PredictionResponseModel> uploadImage(
+    File image, {
+    double? latitude,
+    double? longitude,
+  }) async {
+    final map = <String, dynamic>{
       'file': await MultipartFile.fromFile(
         image.path,
         filename: image.path.split(Platform.pathSeparator).last,
       ),
-    });
+    };
+
+    if (latitude != null) {
+      map['latitude'] = latitude;
+    }
+    if (longitude != null) {
+      map['longitude'] = longitude;
+    }
+
+    final formData = FormData.fromMap(map);
 
     try {
       final response = await _dio.post<Map<String, dynamic>>(
@@ -66,6 +76,31 @@ class ApiService {
       throw ApiException(
         statusCode: response.statusCode ?? 0,
         message: 'Unexpected status ${response.statusCode}.',
+      );
+    } on DioException catch (e) {
+      throw ApiException(
+        statusCode: e.response?.statusCode ?? 0,
+        message: _dioErrorMessage(e),
+      );
+    }
+  }
+
+  /// Fetches real-time aggregated metrics and recent survey logs for the Admin Dashboard.
+  Future<Map<String, dynamic>> fetchAdminAnalytics() async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        ApiEndpoints.adminAnalytics,
+      );
+
+      if (response.statusCode != null &&
+          response.statusCode! >= 200 &&
+          response.statusCode! < 300) {
+        return response.data ?? {};
+      }
+
+      throw ApiException(
+        statusCode: response.statusCode ?? 0,
+        message: 'Unexpected status ${response.statusCode} from admin analytics.',
       );
     } on DioException catch (e) {
       throw ApiException(

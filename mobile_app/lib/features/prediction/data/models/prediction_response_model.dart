@@ -12,6 +12,7 @@ class PredictionResponseModel {
   final RiskAssessmentModel? riskAssessment;
   final String severity;
   final double severityProbability;
+  final Map<String, dynamic>? contextualFactors;
 
   const PredictionResponseModel({
     required this.status,
@@ -24,6 +25,7 @@ class PredictionResponseModel {
     this.riskAssessment,
     this.severity = '',
     this.severityProbability = 0.0,
+    this.contextualFactors,
   });
 
   factory PredictionResponseModel.fromJson(Map<String, dynamic> json) {
@@ -46,6 +48,7 @@ class PredictionResponseModel {
       severity: json['severity'] as String? ?? '',
       severityProbability:
           (json['severity_probability'] as num?)?.toDouble() ?? 0.0,
+      contextualFactors: json['contextual_factors'] as Map<String, dynamic>?,
     );
   }
 
@@ -60,5 +63,6 @@ class PredictionResponseModel {
     if (riskAssessment != null) 'risk_assessment': riskAssessment!.toJson(),
     'severity': severity,
     'severity_probability': severityProbability,
+    if (contextualFactors != null) 'contextual_factors': contextualFactors,
   };
 }

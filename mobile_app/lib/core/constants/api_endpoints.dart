@@ -9,9 +9,12 @@ abstract final class ApiEndpoints {
   /// Change this to your machine's LAN IP when running on a physical
   /// device, or to the deployed server URL in production.
   /// 10.0.2.2 is the Android emulator alias for the host's localhost.
-  static const String baseUrl = 'http://10.196.252.38:8000';
+  static const String baseUrl = 'http://192.168.29.107:8000';
 
   /// POST — accepts multipart/form-data with field "file".
   /// Returns a PredictionResponse JSON object.
   static const String predict = '/predict';
+
+  /// GET — returns real-time admin analytics and inspection metrics.
+  static const String adminAnalytics = '/admin/analytics';
 }

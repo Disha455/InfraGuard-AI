@@ -8,6 +8,8 @@ These models are deliberately separate from the original ``backend/schemas.py``
 so the existing simple API is not disturbed.
 """
 
+from __future__ import annotations
+
 from pydantic import BaseModel, Field
 
 from backend.schemas.risk import RiskAssessmentOut  # noqa: E402
@@ -36,6 +38,45 @@ class DetectionOut(BaseModel):
     bounding_box: BoundingBoxOut = Field(
         ..., description="Bounding box in absolute pixel coordinates"
     )
+
+
+# ---------------------------------------------------------------------------
+# Contextual factors models (Weather, Traffic, Municipal Survey Records)
+# ---------------------------------------------------------------------------
+
+class WeatherContextOut(BaseModel):
+    temperature_c: float = Field(..., description="Current temperature in Celsius")
+    precipitation_mm: float = Field(..., description="Precipitation level in mm")
+    condition: str = Field(..., description="Current atmospheric condition")
+    risk_impact: str = Field(..., description="Engineering impact on road failure risk")
+    multiplier: float = Field(default=1.0, description="Risk multiplier applied to base CV score")
+
+
+class TrafficContextOut(BaseModel):
+    road_name: str = Field(..., description="Identified road name from OSM")
+    road_type: str = Field(..., description="OSM highway classification")
+    traffic_volume: str = Field(..., description="Estimated traffic density")
+    risk_impact: str = Field(..., description="Traffic load impact on pavement")
+    multiplier: float = Field(default=1.0, description="Risk multiplier applied to base CV score")
+
+
+class MaintenanceRecordOut(BaseModel):
+    corridor_id: str = Field(..., description="Municipal road asset ID")
+    road_name: str = Field(..., description="Surveyed corridor name")
+    last_resurfaced_date: str = Field(..., description="Date of last municipal resurfacing")
+    days_since_maintenance: int = Field(..., description="Days elapsed since maintenance")
+    pci_score: float = Field(..., description="Pavement Condition Index (0-100)")
+    maintenance_status: str = Field(..., description="Municipal maintenance status")
+    risk_adjustment: float = Field(default=0.0, description="Risk score points added due to deferred maintenance")
+    notes: str = Field(..., description="Surveyor notes from municipal registry")
+
+
+class ContextualFactorsOut(BaseModel):
+    weather: WeatherContextOut
+    traffic: TrafficContextOut
+    maintenance: MaintenanceRecordOut
+    combined_multiplier: float = Field(default=1.0, description="Weather × Traffic multiplier")
+    maintenance_points: float = Field(default=0.0, description="Points added for maintenance backlog")
 
 
 # ---------------------------------------------------------------------------
@@ -102,6 +143,14 @@ class PredictionResponse(BaseModel):
         ge=0.0,
         le=1.0,
         description="Model probability for High severity",
+    )
+    contextual_factors: ContextualFactorsOut | None = Field(
+        default=None,
+        description="Environmental weather, traffic hierarchy, and historical municipal survey metrics",
+    )
+    location: dict[str, float] | None = Field(
+        default=None,
+        description="GPS coordinates associated with the inspection (latitude, longitude)",
     )
 
 

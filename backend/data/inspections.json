@@ -1,0 +1,130 @@
+[
+  {
+    "run_id": "TEST-INSP-001",
+    "dominant_damage": "pothole",
+    "risk_score": 75.5,
+    "risk_level": "HIGH",
+    "total_detections": 2,
+    "latitude": 12.9716,
+    "longitude": 77.5946,
+    "location_name": "MG Road Corridor",
+    "weather_summary": "24\u00b0C \u2022 Fair",
+    "traffic_level": "High (Commercial & Transit)",
+    "maintenance_status": "Maintenance Overdue",
+    "status": "Verified"
+  },
+  {
+    "run_id": "TEST-INSP-001",
+    "dominant_damage": "pothole",
+    "risk_score": 75.5,
+    "risk_level": "HIGH",
+    "total_detections": 2,
+    "latitude": 12.9716,
+    "longitude": 77.5946,
+    "location_name": "MG Road Corridor",
+    "weather_summary": "24\u00b0C \u2022 Fair",
+    "traffic_level": "High (Commercial & Transit)",
+    "maintenance_status": "Maintenance Overdue",
+    "status": "Verified"
+  },
+  {
+    "run_id": "MUNI-BLR-891",
+    "timestamp": "2026-10-26T09:39:38.349633+00:00",
+    "location_name": "Outer Ring Road (Sector 4)",
+    "coordinates": "12.9352\u00b0 N, 77.6245\u00b0 E",
+    "latitude": 12.9352,
+    "longitude": 77.6245,
+    "dominant_damage": "pothole",
+    "total_detections": 3,
+    "risk_score": 88.5,
+    "risk_level": "CRITICAL",
+    "status": "Action Required",
+    "weather_summary": "Dry & Clear (27.2\u00b0C)",
+    "traffic_level": "Very High (Freight & Bus Transit)",
+    "maintenance_status": "CRITICALLY OVERDUE (1016 Days)",
+    "detections": [
+      {
+        "class_name": "pothole",
+        "confidence": 0.89
+      },
+      {
+        "class_name": "pothole",
+        "confidence": 0.76
+      },
+      {
+        "class_name": "alligator_crack",
+        "confidence": 0.65
+      }
+    ]
+  },
+  {
+    "run_id": "MUNI-BLR-890",
+    "timestamp": "2026-10-26T09:39:38.349633+00:00",
+    "location_name": "Highway 44 - North Arterial",
+    "coordinates": "13.0827\u00b0 N, 77.5877\u00b0 E",
+    "latitude": 13.0827,
+    "longitude": 77.5877,
+    "dominant_damage": "alligator_crack",
+    "total_detections": 2,
+    "risk_score": 74.0,
+    "risk_level": "HIGH",
+    "status": "Crew Assigned",
+    "weather_summary": "Dry (26.5\u00b0C)",
+    "traffic_level": "High (Interstate Logistics)",
+    "maintenance_status": "OVERDUE (850 Days)",
+    "detections": [
+      {
+        "class_name": "alligator_crack",
+        "confidence": 0.82
+      },
+      {
+        "class_name": "linear_crack",
+        "confidence": 0.58
+      }
+    ]
+  },
+  {
+    "run_id": "MUNI-BLR-889",
+    "timestamp": "2026-10-26T09:39:38.349633+00:00",
+    "location_name": "MG Road Central Corridor",
+    "coordinates": "12.9716\u00b0 N, 77.5946\u00b0 E",
+    "latitude": 12.9716,
+    "longitude": 77.5946,
+    "dominant_damage": "transverse_crack",
+    "total_detections": 1,
+    "risk_score": 46.2,
+    "risk_level": "MODERATE",
+    "status": "Under Review",
+    "weather_summary": "Clear (28.0\u00b0C)",
+    "traffic_level": "High (Commercial & Passenger)",
+    "maintenance_status": "ROUTINE MONITORING",
+    "detections": [
+      {
+        "class_name": "transverse_crack",
+        "confidence": 0.71
+      }
+    ]
+  },
+  {
+    "run_id": "MUNI-BLR-888",
+    "timestamp": "2026-10-26T09:39:38.349633+00:00",
+    "location_name": "Indiranagar 100ft Boulevard",
+    "coordinates": "12.9784\u00b0 N, 77.6408\u00b0 E",
+    "latitude": 12.9784,
+    "longitude": 77.6408,
+    "dominant_damage": "linear_crack",
+    "total_detections": 1,
+    "risk_score": 18.0,
+    "risk_level": "LOW",
+    "status": "Routine Log",
+    "weather_summary": "Clear (27.5\u00b0C)",
+    "traffic_level": "Moderate (Urban Commuter)",
+    "maintenance_status": "SATISFACTORY (PCI: 84.0)",
+    "detections": [
+      {
+        "class_name": "linear_crack",
+        "confidence": 0.45
+      }
+    ]
+  }
+]

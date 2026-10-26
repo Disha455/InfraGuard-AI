@@ -1,0 +1,101 @@
+{
+  "survey_metadata": {
+    "agency": "Municipal Road & Infrastructure Maintenance Authority",
+    "survey_standard": "ASTM D6433 Pavement Condition Index (PCI)",
+    "description": "Historical road survey records, last resurfacing timeline, and base-layer fatigue metrics."
+  },
+  "corridors": [
+    {
+      "segment_id": "MUNI-BLR-ORR-04",
+      "road_name": "Outer Ring Road (Sector 4)",
+      "lat_min": 12.9200,
+      "lat_max": 12.9450,
+      "lon_min": 77.6100,
+      "lon_max": 77.6350,
+      "last_resurfaced_date": "2023-01-15",
+      "pci_score": 38.5,
+      "pci_rating": "Poor",
+      "sub_base_condition": "Fatigued Granular Sub-base",
+      "traffic_level": "Very High (Freight & Bus Transit)",
+      "maintenance_status": "CRITICALLY OVERDUE FOR RECONSTRUCTION",
+      "risk_penalty": 15.0,
+      "inspector_notes": "Structural overlay deferred from 2024 budget. High vehicle vibration causing recurrent pothole formation."
+    },
+    {
+      "segment_id": "MUNI-BLR-NH44-01",
+      "road_name": "Highway 44 - North Arterial",
+      "lat_min": 13.0700,
+      "lat_max": 13.1100,
+      "lon_min": 77.5700,
+      "lon_max": 77.6000,
+      "last_resurfaced_date": "2023-06-20",
+      "pci_score": 52.0,
+      "pci_rating": "Fair",
+      "sub_base_condition": "Moderate Moisture Penetration",
+      "traffic_level": "High (Interstate Logistics)",
+      "maintenance_status": "OVERDUE FOR RESURFACING",
+      "risk_penalty": 10.0,
+      "inspector_notes": "Heavy multi-axle freight traffic accelerating longitudinal crack widening into alligator networks."
+    },
+    {
+      "segment_id": "MUNI-BLR-MGR-02",
+      "road_name": "MG Road Central Corridor",
+      "lat_min": 12.9650,
+      "lat_max": 12.9800,
+      "lon_min": 77.5850,
+      "lon_max": 77.6150,
+      "last_resurfaced_date": "2024-02-10",
+      "pci_score": 72.0,
+      "pci_rating": "Good",
+      "sub_base_condition": "Stable Compacted Base",
+      "traffic_level": "High (Commercial & Passenger)",
+      "maintenance_status": "ROUTINE MONITORING",
+      "risk_penalty": 2.0,
+      "inspector_notes": "Recent micro-surfacing intact; monitor utility patch perimeter for localized sinking."
+    },
+    {
+      "segment_id": "MUNI-BLR-IND-100FT",
+      "road_name": "Indiranagar 100ft Boulevard",
+      "lat_min": 12.9700,
+      "lat_max": 12.9850,
+      "lon_min": 77.6350,
+      "lon_max": 77.6550,
+      "last_resurfaced_date": "2024-08-01",
+      "pci_score": 84.0,
+      "pci_rating": "Very Good",
+      "sub_base_condition": "Sound Bituminous Concrete",
+      "traffic_level": "Moderate (Urban Commuter)",
+      "maintenance_status": "SATISFACTORY",
+      "risk_penalty": 0.0,
+      "inspector_notes": "Pavement condition optimal; minor surface wear documented near intersections."
+    },
+    {
+      "segment_id": "MUNI-BLR-ECITY-08",
+      "road_name": "Electronic City Express Link",
+      "lat_min": 12.8350,
+      "lat_max": 12.8600,
+      "lon_min": 77.6500,
+      "lon_max": 77.6750,
+      "last_resurfaced_date": "2023-04-05",
+      "pci_score": 44.0,
+      "pci_rating": "Fair - Degrading",
+      "sub_base_condition": "Base Drainage Issues",
+      "traffic_level": "High (Tech Corridor Commuter & Busses)",
+      "maintenance_status": "SCHEDULED FOR RE-SEALING",
+      "risk_penalty": 12.0,
+      "inspector_notes": "Water ponding along curb during monsoons has softened sub-grade, resulting in frequent pothole craters."
+    }
+  ],
+  "default_zone_profile": {
+    "segment_id": "MUNI-REGIONAL-SURVEY-GEN",
+    "road_name": "Municipal Survey Sector - Uncataloged Corridor",
+    "last_resurfaced_date": "2023-08-15",
+    "pci_score": 58.0,
+    "pci_rating": "Fair",
+    "sub_base_condition": "Standard Bituminous Base",
+    "traffic_level": "Moderate - Mixed Local Traffic",
+    "maintenance_status": "DUE FOR SCHEDULED SURVEY",
+    "risk_penalty": 5.0,
+    "inspector_notes": "Estimated from regional municipal survey benchmarks. Maintenance interval > 400 days."
+  }
+}

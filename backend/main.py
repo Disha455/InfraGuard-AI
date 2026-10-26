@@ -81,6 +81,7 @@ from configs.config import CLASS_NAMES, PRODUCTION_WEIGHTS, TRAINING_CONFIG  # n
 from inference.predictor import load_predictor                                 # noqa: E402
 
 from backend.routers import prediction as prediction_router                    # noqa: E402
+from backend.routers import admin as admin_router                              # noqa: E402
 from backend.schemas.prediction import HealthResponse                          # noqa: E402
 from backend.services.predictor_service import PredictorService                # noqa: E402
 
@@ -212,6 +213,7 @@ app.mount("/outputs", StaticFiles(directory=str(_OUTPUTS_ROOT)), name="outputs")
 # ---------------------------------------------------------------------------
 
 app.include_router(prediction_router.router)
+app.include_router(admin_router.router)
 
 
 # ===========================================================================
