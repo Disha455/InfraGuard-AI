@@ -103,4 +103,76 @@ abstract final class AppColors {
 
   /// Subtle divider (lower contrast than [outline]).
   static const Color outlineVariant = Color(0xFFD0DCE7);
+
+  // ---------------------------------------------------------------------------
+  // Gradients — sophisticated, non-boring multi-tone transitions
+  // ---------------------------------------------------------------------------
+
+  /// Ambient background pastel mesh gradient (slate-blue -> pearl -> soft lavender).
+  static const LinearGradient backgroundGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFFE8EEF5), // soft ice blue
+      Color(0xFFF1F5F9), // crisp misty pearl
+      Color(0xFFEDE8F5), // subtle lilac mist
+    ],
+    stops: [0.0, 0.55, 1.0],
+  );
+
+  /// Executive brand gradient for AppBars and hero headers.
+  static const LinearGradient appBarGradient = LinearGradient(
+    begin: Alignment.centerLeft,
+    end: Alignment.centerRight,
+    colors: [
+      Color(0xFF0A2239), // deep midnight navy
+      Color(0xFF133E68), // royal steel sapphire
+      Color(0xFF1D5A8F), // vibrant slate cerulean
+    ],
+  );
+
+  /// Primary action button gradient.
+  static const LinearGradient buttonGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFF145388),
+      Color(0xFF0D3256),
+    ],
+  );
+
+  /// Accent cyan-teal gradient for telemetry highlights, icons, active chips.
+  static const LinearGradient accentGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFF0284C7), // sky-600
+      Color(0xFF0D9488), // teal-600
+    ],
+  );
+
+  /// Soft card gradient for hero containers and status banners.
+  static const LinearGradient cardHeaderGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFFFFFFFF),
+      Color(0xFFF0F5FA),
+    ],
+  );
+
+  /// Status: Low risk gradient.
+  static const LinearGradient lowRiskGradient = LinearGradient(
+    colors: [Color(0xFF059669), Color(0xFF10B981)],
+  );
+
+  /// Status: Moderate risk gradient.
+  static const LinearGradient moderateRiskGradient = LinearGradient(
+    colors: [Color(0xFFD97706), Color(0xFFF59E0B)],
+  );
+
+  /// Status: High/Critical risk gradient.
+  static const LinearGradient highRiskGradient = LinearGradient(
+    colors: [Color(0xFFDC2626), Color(0xFFE11D48)],
+  );
 }

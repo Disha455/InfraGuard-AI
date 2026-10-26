@@ -162,8 +162,13 @@ class _HomePageState extends State<HomePage> {
     final historyCount = _historyService.count;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: AppColors.appBarGradient,
+          ),
+        ),
         title: const Text('InfraGuard AI'),
         actions: [
           IconButton(
@@ -217,7 +222,11 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      body: Stack(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: AppColors.backgroundGradient,
+        ),
+        child: Stack(
         children: [
           SafeArea(
             child: SingleChildScrollView(
@@ -369,21 +378,37 @@ class _HomePageState extends State<HomePage> {
                       const SizedBox(height: 18),
 
                       // ── Analyze Action Button ────────────────────────────
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 15),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: _isLoading ? null : AppColors.buttonGradient,
+                          color: _isLoading ? Colors.grey : null,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            if (!_isLoading)
+                              BoxShadow(
+                                color: AppColors.primary.withValues(alpha: 0.25),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                          ],
                         ),
-                        onPressed: _isLoading ? null : _onAnalyzeImage,
-                        child: const Text(
-                          'Analyze Image',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onPressed: _isLoading ? null : _onAnalyzeImage,
+                          child: const Text(
+                            'Analyze Image',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),
@@ -445,8 +470,9 @@ class _HomePageState extends State<HomePage> {
             ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   static Widget _corner({required bool top, required bool left}) {
     return Container(

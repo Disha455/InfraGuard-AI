@@ -15,6 +15,8 @@ from typing import Any
 
 logger = logging.getLogger("infraguard.store")
 
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+_OUTPUTS_ROOT = _PROJECT_ROOT / "outputs"
 _DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 _DB_PATH = _DATA_DIR / "infraguard.db"
 _INSPECTIONS_FILE = _DATA_DIR / "inspections.json"
@@ -156,6 +158,16 @@ class InspectionStore:
                 d["detections"] = json.loads(d.get("detections_json") or "[]")
             except Exception:
                 d["detections"] = []
+
+            run_id = d.get("run_id") or ""
+            current_img = d.get("image_url") or ""
+            if not current_img and run_id:
+                outputs_dir = _PROJECT_ROOT / "outputs" / run_id
+                if (outputs_dir / "annotated.jpg").exists():
+                    d["image_url"] = f"/outputs/{run_id}/annotated.jpg"
+                elif (outputs_dir / "original.jpg").exists():
+                    d["image_url"] = f"/outputs/{run_id}/original.jpg"
+
             results.append(d)
         return results
 

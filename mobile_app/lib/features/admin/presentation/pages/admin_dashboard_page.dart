@@ -86,8 +86,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: AppColors.appBarGradient,
+          ),
+        ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -148,7 +153,11 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           ),
         ],
       ),
-      body: SafeArea(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: AppColors.backgroundGradient,
+        ),
+        child: SafeArea(
         child: RefreshIndicator(
           onRefresh: _fetchLiveAnalytics,
           child: SingleChildScrollView(
@@ -462,6 +471,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         ),
       ),
     ),
-  );
+  ),
+);
 }
 }

@@ -23,8 +23,20 @@ class ResultPage extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Road Damage Analysis')),
-      body: ListView(
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: AppColors.appBarGradient,
+          ),
+        ),
+        title: const Text('Road Damage Analysis'),
+      ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: AppColors.backgroundGradient,
+        ),
+        child: ListView(
         padding: const EdgeInsets.symmetric(vertical: 16),
         children: [
           // ── Annotated Image with Bounding Boxes ───────────────────────
@@ -130,8 +142,9 @@ class ResultPage extends StatelessWidget {
             ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 // ── Location Card ─────────────────────────────────────────────────────────────

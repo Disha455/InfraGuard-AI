@@ -114,10 +114,15 @@ class InspectionHistoryService {
           );
         }).toList();
 
+        final rawImg = raw['image_url'] as String? ?? '';
+        final imgUrl = rawImg.isNotEmpty
+            ? rawImg
+            : (runId.isNotEmpty ? '/outputs/$runId/annotated.jpg' : '');
+
         final prediction = PredictionResponseModel(
           status: 'ok',
           runId: runId,
-          annotatedImage: raw['image_url'] as String? ?? '',
+          annotatedImage: imgUrl,
           detectionsFile: '',
           summaryFile: '',
           detections: detections,

@@ -359,7 +359,17 @@ class PredictorService:
                 maintenance_points=maint_pts,
             )
 
-            # Persist to persistent inspection store for real-time admin analytics
+            # ----------------------------------------------------------
+            # 6. Build URL for annotated image & Persist inspection
+            # ----------------------------------------------------------
+            effective_base_url = (base_url or SERVER_BASE_URL).rstrip("/")
+            annotated_rel = (
+                result.annotated_image_path
+                .relative_to(_OUTPUTS_ROOT)
+                .as_posix()
+            )
+            annotated_url = f"{effective_base_url}/outputs/{annotated_rel}"
+
             coords_str = (
                 f"{latitude:.4f}° N, {longitude:.4f}° E"
                 if latitude is not None and longitude is not None
@@ -380,6 +390,7 @@ class PredictorService:
                 "weather_summary": weather_data["condition"],
                 "traffic_level": traffic_data["traffic_volume"],
                 "maintenance_status": maint_data["maintenance_status"],
+                "image_url": f"/outputs/{annotated_rel}",
                 "detections": [
                     {"class_name": d.class_name, "confidence": round(d.confidence, 3)}
                     for d in combined_detections
@@ -404,17 +415,6 @@ class PredictorService:
                 )
                 for d in combined_detections
             ]
-
-            # ----------------------------------------------------------
-            # 8. Build URL for annotated image
-            # ----------------------------------------------------------
-            effective_base_url = (base_url or SERVER_BASE_URL).rstrip("/")
-            annotated_rel = (
-                result.annotated_image_path
-                .relative_to(_OUTPUTS_ROOT)
-                .as_posix()
-            )
-            annotated_url = f"{effective_base_url}/outputs/{annotated_rel}"
 
             elapsed_ms = (time.perf_counter() - t_start) * 1000
             logger.info(

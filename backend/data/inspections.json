@@ -1,7 +1,7 @@
 [
   {
     "run_id": "TEST-INSP-001",
-    "timestamp": "2026-10-26T13:07:37.101214+00:00",
+    "timestamp": "2026-10-26T13:37:44.098979+00:00",
     "location_name": "MG Road Corridor",
     "coordinates": "GPS Telemetry",
     "latitude": 12.9716,
@@ -34,7 +34,7 @@
     "traffic_level": "Moderate to Low (Local Access)",
     "maintenance_status": "CRITICALLY OVERDUE FOR RECONSTRUCTION",
     "detections_json": "[{\"class_name\": \"block_crack\", \"confidence\": 0.631}, {\"class_name\": \"block_crack\", \"confidence\": 0.427}]",
-    "image_url": "",
+    "image_url": "/outputs/run_20261026_182114/annotated.jpg",
     "detections": [
       {
         "class_name": "block_crack",
@@ -62,7 +62,7 @@
     "traffic_level": "Moderate to Low (Local Access)",
     "maintenance_status": "CRITICALLY OVERDUE FOR RECONSTRUCTION",
     "detections_json": "[{\"class_name\": \"alligator_crack\", \"confidence\": 0.35}, {\"class_name\": \"linear_crack\", \"confidence\": 0.252}]",
-    "image_url": "",
+    "image_url": "/outputs/run_20261026_180704/annotated.jpg",
     "detections": [
       {
         "class_name": "alligator_crack",
@@ -90,7 +90,7 @@
     "traffic_level": "Moderate to Low (Local Access)",
     "maintenance_status": "CRITICALLY OVERDUE FOR RECONSTRUCTION",
     "detections_json": "[]",
-    "image_url": "",
+    "image_url": "/outputs/run_20261026_180629/annotated.jpg",
     "detections": []
   },
   {
@@ -109,7 +109,7 @@
     "traffic_level": "Moderate to Low (Local Access)",
     "maintenance_status": "CRITICALLY OVERDUE FOR RECONSTRUCTION",
     "detections_json": "[{\"class_name\": \"block_crack\", \"confidence\": 0.631}, {\"class_name\": \"block_crack\", \"confidence\": 0.427}]",
-    "image_url": "",
+    "image_url": "/outputs/run_20261026_175235/annotated.jpg",
     "detections": [
       {
         "class_name": "block_crack",
@@ -137,7 +137,7 @@
     "traffic_level": "Moderate to Low (Local Access)",
     "maintenance_status": "CRITICALLY OVERDUE FOR RECONSTRUCTION",
     "detections_json": "[{\"class_name\": \"block_crack\", \"confidence\": 0.386}]",
-    "image_url": "",
+    "image_url": "/outputs/run_20261026_175200/annotated.jpg",
     "detections": [
       {
         "class_name": "block_crack",
@@ -161,7 +161,7 @@
     "traffic_level": "Moderate to Low (Local Access)",
     "maintenance_status": "CRITICALLY OVERDUE FOR RECONSTRUCTION",
     "detections_json": "[{\"class_name\": \"block_crack\", \"confidence\": 0.417}]",
-    "image_url": "",
+    "image_url": "/outputs/run_20261026_175120/annotated.jpg",
     "detections": [
       {
         "class_name": "block_crack",
@@ -185,7 +185,7 @@
     "traffic_level": "Moderate to Low (Local Access)",
     "maintenance_status": "CRITICALLY OVERDUE FOR RECONSTRUCTION",
     "detections_json": "[{\"class_name\": \"pothole\", \"confidence\": 0.78}, {\"class_name\": \"linear_crack\", \"confidence\": 0.273}]",
-    "image_url": "",
+    "image_url": "/outputs/run_20261026_175000/annotated.jpg",
     "detections": [
       {
         "class_name": "pothole",
@@ -213,7 +213,7 @@
     "traffic_level": "Moderate (Urban Commuter)",
     "maintenance_status": "CRITICALLY OVERDUE FOR RECONSTRUCTION",
     "detections_json": "[{\"class_name\": \"pothole\", \"confidence\": 0.78}, {\"class_name\": \"linear_crack\", \"confidence\": 0.273}]",
-    "image_url": "",
+    "image_url": "/outputs/run_20261026_174930/annotated.jpg",
     "detections": [
       {
         "class_name": "pothole",
