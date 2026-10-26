@@ -4,12 +4,22 @@
 // a base-URL or versioning change requires editing only this file.
 
 abstract final class ApiEndpoints {
+  static String _baseUrl = 'http://192.168.29.107:8000';
+
   /// Base URL of the FastAPI inference server.
-  ///
-  /// Change this to your machine's LAN IP when running on a physical
-  /// device, or to the deployed server URL in production.
-  /// 10.0.2.2 is the Android emulator alias for the host's localhost.
-  static const String baseUrl = 'http://192.168.29.107:8000';
+  static String get baseUrl => _baseUrl;
+
+  /// Dynamically updates the base URL across the app session.
+  static void setBaseUrl(String newUrl) {
+    var trimmed = newUrl.trim();
+    if (trimmed.endsWith('/')) {
+      trimmed = trimmed.substring(0, trimmed.length - 1);
+    }
+    if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+      trimmed = 'http://$trimmed';
+    }
+    _baseUrl = trimmed;
+  }
 
   /// POST — accepts multipart/form-data with field "file".
   /// Returns a PredictionResponse JSON object.

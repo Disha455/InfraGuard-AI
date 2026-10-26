@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/inspection_history_service.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/server_config_dialog.dart';
 import '../../../../routes/app_router.dart';
 import '../../data/models/admin_analytics_data.dart';
 import '../widgets/damage_pie_chart.dart';
@@ -105,6 +106,14 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.wifi_rounded),
+            tooltip: 'Server Connection',
+            onPressed: () => ServerConfigDialog.show(
+              context,
+              onSaved: () => _fetchLiveAnalytics(),
+            ),
+          ),
           IconButton(
             icon: _isLoading
                 ? const SizedBox(
@@ -249,8 +258,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                     const SizedBox(height: 2),
                                     Text(
                                       _isLiveBackendConnected
-                                          ? 'Real-time telemetry active: Live field uploads, Open-Meteo weather, and municipal road survey history.'
-                                          : 'Offline mode: Showing cached field sessions. Tap refresh to connect.',
+                                          ? 'Central database connected. Live uploads & GIS records active.'
+                                          : 'Offline mode (cached). Tap Wi-Fi icon to configure backend.',
                                       style: textTheme.bodySmall?.copyWith(
                                         color: AppColors.textSecondary,
                                         fontSize: 11,

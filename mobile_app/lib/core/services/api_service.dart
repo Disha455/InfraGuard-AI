@@ -33,6 +33,29 @@ class ApiService {
     );
   }
 
+  /// Updates the runtime server URL in Dio and ApiEndpoints.
+  void updateBaseUrl(String newUrl) {
+    ApiEndpoints.setBaseUrl(newUrl);
+    _dio.options.baseUrl = ApiEndpoints.baseUrl;
+  }
+
+  /// Pings the backend health endpoint to verify connectivity.
+  Future<bool> testConnection({String? targetUrl}) async {
+    try {
+      final client = targetUrl != null
+          ? Dio(BaseOptions(
+              baseUrl: targetUrl,
+              connectTimeout: const Duration(seconds: 4),
+              receiveTimeout: const Duration(seconds: 4),
+            ))
+          : _dio;
+      final res = await client.get('/health');
+      return res.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Uploads [image] to [ApiEndpoints.predict] as a multipart request.
   ///
   /// Optionally passes [latitude] and [longitude] for real-time weather,

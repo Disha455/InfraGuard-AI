@@ -7,6 +7,7 @@ import '../../../../core/services/inspection_history_service.dart';
 import '../../../../core/services/location_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/image_validator.dart';
+import '../../../../core/widgets/server_config_dialog.dart';
 import '../../../prediction/data/models/prediction_response_model.dart';
 import '../../../../routes/app_router.dart';
 
@@ -52,6 +53,13 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: isError
             ? Theme.of(context).colorScheme.error
             : Theme.of(context).colorScheme.primary,
+        action: isError
+            ? SnackBarAction(
+                label: 'Server IP',
+                textColor: Colors.white,
+                onPressed: () => ServerConfigDialog.show(context),
+              )
+            : null,
       ),
     );
   }
@@ -93,7 +101,7 @@ class _HomePageState extends State<HomePage> {
     } on PlatformException catch (e) {
       final message = (e.code == 'camera_access_denied' ||
               e.code == 'photo_access_denied')
-          ? 'Camera permission denied. Please enable it in your device settings.'
+          ? 'Camera permission denied. Please enable it in device settings.'
           : 'Camera unavailable: ${e.message ?? e.code}';
       _showSnackBar(message, isError: true);
     }
@@ -105,14 +113,13 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _onAnalyzeImage() async {
     if (_selectedImage == null) {
-      _showSnackBar('No image selected. Please choose from gallery or capture with camera.', isError: true);
+      _showSnackBar('Please select an image first.', isError: true);
       return;
     }
 
     setState(() => _isLoading = true);
 
     try {
-      // Acquire GPS location and upload image concurrently
       final location = await _locationService.getCurrentLocation();
       final PredictionResponseModel result = await _apiService.uploadImage(
         _selectedImage!,
@@ -120,12 +127,6 @@ class _HomePageState extends State<HomePage> {
         longitude: location?.longitude,
       );
 
-      debugPrint('run_id: ${result.runId}');
-      debugPrint('total_detections: ${result.totalDetections}');
-      debugPrint('annotated_image: ${result.annotatedImage}');
-      debugPrint('location: $location');
-
-      // Save to persistent history before navigating
       _historyService.addInspection(
         result,
         originalImagePath: _selectedImage?.path ?? '',
@@ -145,7 +146,7 @@ class _HomePageState extends State<HomePage> {
     } on ApiException catch (e) {
       _showSnackBar(e.message, isError: true);
     } catch (e) {
-      _showSnackBar('Unexpected error: $e', isError: true);
+      _showSnackBar('Network error: $e', isError: true);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -163,24 +164,13 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'InfraGuard AI',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            Text(
-              'Field Road Inspection Terminal',
-              style: TextStyle(
-                fontSize: 11,
-                color: AppColors.onPrimary.withValues(alpha: 0.85),
-                fontWeight: FontWeight.normal,
-              ),
-            ),
-          ],
-        ),
+        title: const Text('InfraGuard AI'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.wifi_rounded),
+            tooltip: 'Server Connection IP',
+            onPressed: () => ServerConfigDialog.show(context),
+          ),
           IconButton(
             icon: Stack(
               clipBehavior: Clip.none,
@@ -196,10 +186,7 @@ class _HomePageState extends State<HomePage> {
                         color: AppColors.secondary,
                         shape: BoxShape.circle,
                       ),
-                      constraints: const BoxConstraints(
-                        minWidth: 16,
-                        minHeight: 16,
-                      ),
+                      constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
                       child: Text(
                         '$historyCount',
                         style: const TextStyle(
@@ -234,307 +221,176 @@ class _HomePageState extends State<HomePage> {
         children: [
           SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 580),
+                  constraints: const BoxConstraints(maxWidth: 520),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // ── Telemetry & GPS Status Banner ────────────────────
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.outlineVariant),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.03),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
+                      // ── Central Viewfinder Card ───────────────────────────
+                      Card(
+                        elevation: 1,
+                        margin: EdgeInsets.zero,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          side: const BorderSide(color: AppColors.outlineVariant),
                         ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: const BoxDecoration(
-                                color: AppColors.success,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                'Telemetry Active • Auto GPS & Weather Geocoding',
-                                style: textTheme.labelSmall?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.textPrimary,
-                                  fontSize: 11,
-                                ),
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: AppColors.primaryContainer,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                'ONLINE',
-                                style: textTheme.labelSmall?.copyWith(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 10,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // ── High-Tech AI Scanner Viewfinder Card ─────────────
-                      Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(
-                            color: _selectedImage != null
-                                ? AppColors.primary
-                                : AppColors.outlineVariant,
-                            width: _selectedImage != null ? 1.5 : 1.0,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withValues(alpha: 0.05),
-                              blurRadius: 16,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(17),
-                          child: Padding(
-                            padding: const EdgeInsets.all(20),
-                            child: Column(
-                              children: [
-                                if (_selectedImage != null) ...[
-                                  // Image Selected Preview
-                                  Stack(
-                                    children: [
-                                      ClipRRect(
-                                        borderRadius: BorderRadius.circular(12),
-                                        child: Image.file(
-                                          _selectedImage!,
-                                          height: 220,
-                                          width: double.infinity,
-                                          fit: BoxFit.cover,
-                                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            children: [
+                              if (_selectedImage != null) ...[
+                                // Image Selected Preview
+                                Stack(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Image.file(
+                                        _selectedImage!,
+                                        height: 230,
+                                        width: double.infinity,
+                                        fit: BoxFit.cover,
                                       ),
-                                      Positioned(
-                                        top: 8,
-                                        right: 8,
-                                        child: InkWell(
-                                          onTap: () => setState(() => _selectedImage = null),
-                                          child: Container(
-                                            padding: const EdgeInsets.all(6),
-                                            decoration: BoxDecoration(
-                                              color: Colors.black.withValues(alpha: 0.65),
-                                              shape: BoxShape.circle,
-                                            ),
-                                            child: const Icon(
-                                              Icons.close,
-                                              size: 16,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      Positioned(
-                                        bottom: 8,
-                                        left: 8,
+                                    ),
+                                    Positioned(
+                                      top: 8,
+                                      right: 8,
+                                      child: InkWell(
+                                        onTap: () => setState(() => _selectedImage = null),
                                         child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 8, vertical: 4),
+                                          padding: const EdgeInsets.all(6),
                                           decoration: BoxDecoration(
                                             color: Colors.black.withValues(alpha: 0.65),
-                                            borderRadius: BorderRadius.circular(6),
+                                            shape: BoxShape.circle,
                                           ),
-                                          child: const Text(
-                                            '✓ Road Surface Captured',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
+                                          child: const Icon(Icons.close, size: 16, color: Colors.white),
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                ] else ...[
-                                  // Empty Scanner Viewfinder HUD
-                                  Container(
-                                    width: double.infinity,
-                                    height: 190,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.surfaceVariant.withValues(alpha: 0.6),
-                                      borderRadius: BorderRadius.circular(14),
-                                      border: Border.all(
-                                        color: AppColors.outlineVariant,
-                                        style: BorderStyle.solid,
-                                      ),
-                                    ),
-                                    child: Stack(
-                                      alignment: Alignment.center,
-                                      children: [
-                                        // Viewfinder Corner Brackets
-                                        Positioned(
-                                          top: 10,
-                                          left: 10,
-                                          child: _cornerBracket(top: true, left: true),
-                                        ),
-                                        Positioned(
-                                          top: 10,
-                                          right: 10,
-                                          child: _cornerBracket(top: true, left: false),
-                                        ),
-                                        Positioned(
-                                          bottom: 10,
-                                          left: 10,
-                                          child: _cornerBracket(top: false, left: true),
-                                        ),
-                                        Positioned(
-                                          bottom: 10,
-                                          right: 10,
-                                          child: _cornerBracket(top: false, left: false),
-                                        ),
-
-                                        Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            Container(
-                                              width: 58,
-                                              height: 58,
-                                              decoration: BoxDecoration(
-                                                color: AppColors.primaryContainer,
-                                                borderRadius: BorderRadius.circular(16),
-                                              ),
-                                              child: const Icon(
-                                                Icons.camera_alt_outlined,
-                                                size: 32,
-                                                color: AppColors.primary,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 12),
-                                            Text(
-                                              'Road Damage Detection',
-                                              style: textTheme.titleMedium?.copyWith(
-                                                fontWeight: FontWeight.w800,
-                                                color: AppColors.textPrimary,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              'Capture asphalt photo or choose from gallery',
-                                              style: textTheme.bodySmall?.copyWith(
-                                                color: AppColors.textSecondary,
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-
-                                const SizedBox(height: 16),
-
-                                // ── Dual Action Source Buttons (Gallery & Camera) ──
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: OutlinedButton.icon(
-                                        icon: const Icon(Icons.photo_library_outlined, size: 18),
-                                        label: const Text('Gallery'),
-                                        style: OutlinedButton.styleFrom(
-                                          padding: const EdgeInsets.symmetric(vertical: 12),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(10),
-                                          ),
-                                        ),
-                                        onPressed: _isLoading ? null : _onGallery,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: ElevatedButton.icon(
-                                        icon: const Icon(Icons.camera_alt_rounded, size: 18),
-                                        label: const Text('Camera'),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: AppColors.primary,
-                                          foregroundColor: Colors.white,
-                                          padding: const EdgeInsets.symmetric(vertical: 12),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(10),
-                                          ),
-                                        ),
-                                        onPressed: _isLoading ? null : _onCamera,
                                       ),
                                     ),
                                   ],
                                 ),
+                              ] else ...[
+                                // Clean Viewfinder Frame
+                                Container(
+                                  width: double.infinity,
+                                  height: 190,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.surfaceVariant.withValues(alpha: 0.5),
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(color: AppColors.outlineVariant),
+                                  ),
+                                  child: Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      Positioned(top: 10, left: 10, child: _corner(top: true, left: true)),
+                                      Positioned(top: 10, right: 10, child: _corner(top: true, left: false)),
+                                      Positioned(bottom: 10, left: 10, child: _corner(top: false, left: true)),
+                                      Positioned(bottom: 10, right: 10, child: _corner(top: false, left: false)),
+                                      Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Container(
+                                            width: 54,
+                                            height: 54,
+                                            decoration: BoxDecoration(
+                                              color: AppColors.primaryContainer,
+                                              borderRadius: BorderRadius.circular(14),
+                                            ),
+                                            child: const Icon(
+                                              Icons.camera_alt_outlined,
+                                              size: 30,
+                                              color: AppColors.primary,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 12),
+                                          Text(
+                                            'Road Damage Detection',
+                                            style: textTheme.titleMedium?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.textPrimary,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            'Point camera at pavement distress',
+                                            style: textTheme.bodySmall?.copyWith(
+                                              color: AppColors.textSecondary,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ],
-                            ),
+
+                              const SizedBox(height: 18),
+
+                              // ── Dual Source Buttons (Gallery & Camera) ───
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: OutlinedButton.icon(
+                                      icon: const Icon(Icons.photo_library_outlined, size: 18),
+                                      label: const Text('Gallery'),
+                                      style: OutlinedButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(vertical: 12),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                      ),
+                                      onPressed: _isLoading ? null : _onGallery,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: ElevatedButton.icon(
+                                      icon: const Icon(Icons.camera_alt_rounded, size: 18),
+                                      label: const Text('Camera'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppColors.primary,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(vertical: 12),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                      ),
+                                      onPressed: _isLoading ? null : _onCamera,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
                       ),
 
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 18),
 
-                      // ── Primary Action Button: Analyze Image ──────────────
-                      Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withValues(alpha: 0.25),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
+                      // ── Analyze Action Button ────────────────────────────
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
-                        child: ElevatedButton.icon(
-                          icon: const Icon(Icons.auto_awesome_rounded, size: 20),
-                          label: const Text(
-                            'Analyze Image',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.3,
-                            ),
+                        onPressed: _isLoading ? null : _onAnalyzeImage,
+                        child: const Text(
+                          'Analyze Image',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
                           ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          onPressed: _isLoading ? null : _onAnalyzeImage,
                         ),
                       ),
 
                       const SizedBox(height: 10),
 
-                      // GPS Location acquisition hint (Required for automated tests)
+                      // GPS status caption
                       Center(
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -555,43 +411,6 @@ class _HomePageState extends State<HomePage> {
                           ],
                         ),
                       ),
-
-                      const SizedBox(height: 20),
-
-                      // ── Supported AI Distress Classes Chip Strip ──────────
-                      Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.outlineVariant),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'DETECTED ROAD DISTRESS TAXONOMY',
-                              style: textTheme.labelSmall?.copyWith(
-                                color: AppColors.textSecondary,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.8,
-                                fontSize: 10,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 6,
-                              children: [
-                                _classChip('Potholes', const Color(0xFFD32F2F)),
-                                _classChip('Alligator Cracks', const Color(0xFFF57C00)),
-                                _classChip('Longitudinal Cracks', const Color(0xFF1976D2)),
-                                _classChip('Transverse Cracks', const Color(0xFF0097A7)),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -599,115 +418,46 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
 
-          // ── Loading overlay — sits above all content ──────────────────────
-          _LoadingOverlay(visible: _isLoading),
+          // ── Loading overlay ──────────────────────────────────────────────
+          if (_isLoading)
+            Container(
+              color: Colors.black.withValues(alpha: 0.55),
+              child: Center(
+                child: Card(
+                  color: AppColors.surface,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 22),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const CircularProgressIndicator(color: AppColors.primary),
+                        const SizedBox(height: 18),
+                        Text(
+                          'Processing Road Inspection...',
+                          style: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 
-  static Widget _cornerBracket({required bool top, required bool left}) {
+  static Widget _corner({required bool top, required bool left}) {
     return Container(
       width: 14,
       height: 14,
       decoration: BoxDecoration(
         border: Border(
-          top: top ? const BorderSide(color: AppColors.primary, width: 2.2) : BorderSide.none,
-          bottom: !top ? const BorderSide(color: AppColors.primary, width: 2.2) : BorderSide.none,
-          left: left ? const BorderSide(color: AppColors.primary, width: 2.2) : BorderSide.none,
-          right: !left ? const BorderSide(color: AppColors.primary, width: 2.2) : BorderSide.none,
-        ),
-      ),
-    );
-  }
-
-  static Widget _classChip(String label, Color dotColor) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceVariant,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(
-              color: dotColor,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── _LoadingOverlay ───────────────────────────────────────────────────────────
-
-class _LoadingOverlay extends StatelessWidget {
-  final bool visible;
-
-  const _LoadingOverlay({required this.visible});
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
-    return AnimatedOpacity(
-      opacity: visible ? 1.0 : 0.0,
-      duration: const Duration(milliseconds: 250),
-      child: IgnorePointer(
-        ignoring: !visible,
-        child: AbsorbPointer(
-          absorbing: visible,
-          child: Container(
-            color: Colors.black.withValues(alpha: 0.65),
-            child: Center(
-              child: Card(
-                color: AppColors.surface,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const CircularProgressIndicator(
-                        color: AppColors.primary,
-                        strokeWidth: 3,
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        'Analyzing road image & capturing GPS...',
-                        style: textTheme.titleMedium?.copyWith(
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Computing YOLOv8, ResNet & environmental risk factors',
-                        style: textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
+          top: top ? const BorderSide(color: AppColors.primary, width: 2.0) : BorderSide.none,
+          bottom: !top ? const BorderSide(color: AppColors.primary, width: 2.0) : BorderSide.none,
+          left: left ? const BorderSide(color: AppColors.primary, width: 2.0) : BorderSide.none,
+          right: !left ? const BorderSide(color: AppColors.primary, width: 2.0) : BorderSide.none,
         ),
       ),
     );

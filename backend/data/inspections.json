@@ -1,7 +1,7 @@
 [
   {
     "run_id": "TEST-INSP-001",
-    "timestamp": "2026-10-26T12:44:26.053782+00:00",
+    "timestamp": "2026-10-26T13:07:37.101214+00:00",
     "location_name": "MG Road Corridor",
     "coordinates": "GPS Telemetry",
     "latitude": 12.9716,
@@ -17,6 +17,34 @@
     "detections_json": "[]",
     "image_url": "",
     "detections": []
+  },
+  {
+    "run_id": "run_20261026_182114",
+    "timestamp": "2026-10-26T12:51:16.333082+00:00",
+    "location_name": "Vinayaka Layout",
+    "coordinates": "13.1088\u00b0 N, 77.5788\u00b0 E",
+    "latitude": 13.1088424,
+    "longitude": 77.5787635,
+    "dominant_damage": "block_crack",
+    "total_detections": 2,
+    "risk_score": 58.5,
+    "risk_level": "HIGH",
+    "status": "Action Required",
+    "weather_summary": "Dry & Clear (22.6\u00b0C)",
+    "traffic_level": "Moderate to Low (Local Access)",
+    "maintenance_status": "CRITICALLY OVERDUE FOR RECONSTRUCTION",
+    "detections_json": "[{\"class_name\": \"block_crack\", \"confidence\": 0.631}, {\"class_name\": \"block_crack\", \"confidence\": 0.427}]",
+    "image_url": "",
+    "detections": [
+      {
+        "class_name": "block_crack",
+        "confidence": 0.631
+      },
+      {
+        "class_name": "block_crack",
+        "confidence": 0.427
+      }
+    ]
   },
   {
     "run_id": "run_20261026_180704",

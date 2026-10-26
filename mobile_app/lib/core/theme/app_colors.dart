@@ -38,69 +38,69 @@ abstract final class AppColors {
   static const Color onSecondaryContainer = Color(0xFF4E2600);
 
   // ---------------------------------------------------------------------------
-  // Surfaces & backgrounds
+  // Surfaces & backgrounds — soft pastel tones for eye comfort & clean contrast
   // ---------------------------------------------------------------------------
 
-  /// Page / scaffold background.
-  static const Color background = Color(0xFFF8FAFC); // slate-50 clean background
+  /// Page / scaffold background — soft pastel ice-slate tone.
+  static const Color background = Color(0xFFEAF0F6);
 
   /// Card, dialog, bottom-sheet surface.
   static const Color surface = Color(0xFFFFFFFF);
 
-  /// Slightly elevated surface variant (e.g. input fill, container).
-  static const Color surfaceVariant = Color(0xFFF1F5F9); // slate-100
+  /// Slightly elevated surface variant (input fill, chips, badge containers).
+  static const Color surfaceVariant = Color(0xFFDFE8F1);
 
   /// On-surface — default text / icon colour.
-  static const Color onSurface = Color(0xFF1C1B1F);
+  static const Color onSurface = Color(0xFF1E293B);
 
   /// On-surface variant — secondary icons, dividers.
-  static const Color onSurfaceVariant = Color(0xFF49454F);
+  static const Color onSurfaceVariant = Color(0xFF5B6E83);
 
   // ---------------------------------------------------------------------------
   // Semantic — status indicators
   // ---------------------------------------------------------------------------
 
   /// Error — destructive actions, form validation, inference failures.
-  static const Color error = Color(0xFFB00020);
+  static const Color error = Color(0xFFDC2626);
 
   /// On-error — text / icons on top of [error].
   static const Color onError = Color(0xFFFFFFFF);
 
   /// Error container — subtle error background (banners, chips).
-  static const Color errorContainer = Color(0xFFFFDAD6);
+  static const Color errorContainer = Color(0xFFFEE2E2);
 
   /// Success — passed checks, confidence above threshold.
-  static const Color success = Color(0xFF2E7D32); // green-800
+  static const Color success = Color(0xFF059669);
 
   /// Success container — subtle success background.
-  static const Color successContainer = Color(0xFFC8E6C9); // green-100
+  static const Color successContainer = Color(0xFFD1FAE5);
 
   /// Warning — medium-confidence detections, non-critical alerts.
-  static const Color warning = Color(0xFFF57C00); // orange-800
+  static const Color warning = Color(0xFFD97706);
 
   /// Warning container — subtle warning background.
-  static const Color warningContainer = Color(0xFFFFE0B2); // orange-100
+  static const Color warningContainer = Color(0xFFFEF3C7);
 
   // ---------------------------------------------------------------------------
   // Text
   // ---------------------------------------------------------------------------
 
   /// Primary text — headings, body copy, labels.
-  static const Color textPrimary = Color(0xFF212121); // grey-900
+  static const Color textPrimary = Color(0xFF1E293B);
 
   /// Secondary text — captions, hints, metadata.
-  static const Color textSecondary = Color(0xFF757575); // grey-600
+  static const Color textSecondary = Color(0xFF5B6E83);
 
   /// Disabled text / icon state.
-  static const Color textDisabled = Color(0xFFBDBDBD); // grey-400
+  static const Color textDisabled = Color(0xFF94A3B8);
 
   // ---------------------------------------------------------------------------
   // Outline & divider
   // ---------------------------------------------------------------------------
 
   /// Border, outline, divider lines.
-  static const Color outline = Color(0xFFCAC4D0);
+  static const Color outline = Color(0xFFBAC9D8);
 
   /// Subtle divider (lower contrast than [outline]).
-  static const Color outlineVariant = Color(0xFFE6E1E5);
+  static const Color outlineVariant = Color(0xFFD0DCE7);
 }

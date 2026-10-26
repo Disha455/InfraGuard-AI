@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/server_config_dialog.dart';
 import '../../../../routes/app_router.dart';
 
 class WelcomePage extends StatelessWidget {
@@ -11,12 +12,23 @@ class WelcomePage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.wifi_rounded, color: AppColors.textSecondary),
+            tooltip: 'Server Connection Settings',
+            onPressed: () => ServerConfigDialog.show(context),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 520),
+              constraints: const BoxConstraints(maxWidth: 500),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -35,7 +47,7 @@ class WelcomePage extends StatelessWidget {
                         borderRadius: BorderRadius.circular(18),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.25),
+                            color: AppColors.primary.withValues(alpha: 0.20),
                             blurRadius: 14,
                             offset: const Offset(0, 6),
                           ),
@@ -51,7 +63,7 @@ class WelcomePage extends StatelessWidget {
                     ),
                   ),
 
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
 
                   Text(
                     'InfraGuard-AI',
@@ -70,38 +82,12 @@ class WelcomePage extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: textTheme.bodySmall?.copyWith(
                       color: AppColors.textSecondary,
-                      height: 1.3,
-                      fontSize: 12,
+                      height: 1.35,
+                      fontSize: 13,
                     ),
                   ),
 
-                  const SizedBox(height: 14),
-
-                  // ── Role Selection Prompt ─────────────────────────────────
-                  Row(
-                    children: [
-                      const Expanded(
-                        child: Divider(color: AppColors.outlineVariant),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        child: Text(
-                          'SELECT YOUR ROLE',
-                          style: textTheme.labelSmall?.copyWith(
-                            color: AppColors.textSecondary,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.0,
-                            fontSize: 10,
-                          ),
-                        ),
-                      ),
-                      const Expanded(
-                        child: Divider(color: AppColors.outlineVariant),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 24),
 
                   // ── Option 1: Inspector Login ─────────────────────────────
                   _RoleCard(
@@ -112,12 +98,11 @@ class WelcomePage extends StatelessWidget {
                     icon: Icons.camera_alt_outlined,
                     iconBgColor: AppColors.primaryContainer,
                     iconColor: AppColors.primary,
-                    chips: const ['Live Camera', 'GPS Geotagged', 'Real-Time AI'],
                     onTap: () =>
                         Navigator.pushNamed(context, AppRouter.inspectorLogin),
                   ),
 
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
 
                   // ── Option 2: Admin Login ─────────────────────────────────
                   _RoleCard(
@@ -128,52 +113,8 @@ class WelcomePage extends StatelessWidget {
                     icon: Icons.insights_rounded,
                     iconBgColor: const Color(0xFFE0E7FF),
                     iconColor: const Color(0xFF1E40AF),
-                    chips: const ['Live SQLite Sync', 'Defect Breakdown', 'Hotspots'],
                     onTap: () =>
                         Navigator.pushNamed(context, AppRouter.adminLogin),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // ── Prototype / Demo Disclaimer ───────────────────────────
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceVariant,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppColors.outlineVariant),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.info_outline,
-                          size: 14,
-                          color: AppColors.textSecondary,
-                        ),
-                        const SizedBox(width: 6),
-                        Flexible(
-                          child: Text(
-                            'Prototype Mode: Pre-configured credentials available for testing.',
-                            style: textTheme.bodySmall?.copyWith(
-                              color: AppColors.textSecondary,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  Text(
-                    'InfraGuard-AI Platform • Enterprise Build v1.2 • SQLite Active',
-                    textAlign: TextAlign.center,
-                    style: textTheme.labelSmall?.copyWith(
-                      color: AppColors.textDisabled,
-                      fontSize: 10,
-                    ),
                   ),
                 ],
               ),
@@ -192,7 +133,6 @@ class _RoleCard extends StatelessWidget {
   final IconData icon;
   final Color iconBgColor;
   final Color iconColor;
-  final List<String> chips;
   final VoidCallback onTap;
 
   const _RoleCard({
@@ -202,7 +142,6 @@ class _RoleCard extends StatelessWidget {
     required this.icon,
     required this.iconBgColor,
     required this.iconColor,
-    required this.chips,
     required this.onTap,
   });
 
@@ -213,7 +152,7 @@ class _RoleCard extends StatelessWidget {
     return Material(
       color: AppColors.surface,
       elevation: 1,
-      shadowColor: Colors.black.withValues(alpha: 0.05),
+      shadowColor: Colors.black.withValues(alpha: 0.04),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
         side: const BorderSide(color: AppColors.outlineVariant),
@@ -222,103 +161,76 @@ class _RoleCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: iconBgColor,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(icon, size: 22, color: iconColor),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: iconBgColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, size: 24, color: iconColor),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                       children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                title,
-                                style: textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.textPrimary,
-                                  fontSize: 15,
-                                ),
-                              ),
+                        Expanded(
+                          child: Text(
+                            title,
+                            style: textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textPrimary,
+                              fontSize: 15,
                             ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: iconBgColor,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                badge,
-                                style: textTheme.labelSmall?.copyWith(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w800,
-                                  color: iconColor,
-                                ),
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          subtitle,
-                          style: textTheme.bodySmall?.copyWith(
-                            color: AppColors.textSecondary,
-                            height: 1.3,
-                            fontSize: 11,
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: iconBgColor,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            badge,
+                            style: textTheme.labelSmall?.copyWith(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              color: iconColor,
+                            ),
                           ),
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(width: 6),
-                  const Padding(
-                    padding: EdgeInsets.only(top: 10),
-                    child: Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 14,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 6,
-                runSpacing: 4,
-                children: chips.map((c) {
-                  return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceVariant,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      c,
-                      style: const TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w600,
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: textTheme.bodySmall?.copyWith(
                         color: AppColors.textSecondary,
+                        height: 1.3,
+                        fontSize: 12,
                       ),
                     ),
-                  );
-                }).toList(),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 6),
+              const Padding(
+                padding: EdgeInsets.only(top: 12),
+                child: Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 14,
+                  color: AppColors.textSecondary,
+                ),
               ),
             ],
           ),
