@@ -79,38 +79,42 @@ class _HistoryPageState extends State<HistoryPage> {
   Widget build(BuildContext context) {
     final items = _service.getHistory();
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: AppColors.appBarGradient,
-          ),
-        ),
-        title: const Text('Inspection History'),
-        actions: [
-          if (items.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.delete_outline),
-              tooltip: 'Delete All',
-              onPressed: _onDeleteAll,
-            ),
-        ],
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: AppColors.backgroundGradient,
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppColors.backgroundGradient,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(
+              gradient: AppColors.appBarGradient,
+            ),
+          ),
+          title: const Text('Inspection History'),
+          actions: [
+            if (items.isNotEmpty)
+              IconButton(
+                icon: const Icon(Icons.delete_outline),
+                tooltip: 'Delete All',
+                onPressed: _onDeleteAll,
+              ),
+          ],
         ),
-        child: RefreshIndicator(
-          onRefresh: _syncHistory,
-          child: items.isEmpty
-              ? Stack(
-                  children: [
-                    ListView(physics: const AlwaysScrollableScrollPhysics()),
-                    _EmptyState(),
-                  ],
-                )
-              : _HistoryList(items: items),
+        body: SizedBox.expand(
+          child: RefreshIndicator(
+            onRefresh: _syncHistory,
+            child: items.isEmpty
+                ? Stack(
+                    children: [
+                      ListView(physics: const AlwaysScrollableScrollPhysics()),
+                      _EmptyState(),
+                    ],
+                  )
+                : _HistoryList(items: items),
+          ),
         ),
       ),
     );

@@ -22,27 +22,30 @@ class ResultPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: AppColors.appBarGradient,
-          ),
-        ),
-        title: const Text('Road Damage Analysis'),
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: AppColors.backgroundGradient,
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppColors.backgroundGradient,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(
+              gradient: AppColors.appBarGradient,
+            ),
+          ),
+          title: const Text('Road Damage Analysis'),
         ),
-        child: ListView(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        children: [
-          // ── Annotated Image with Bounding Boxes ───────────────────────
-          _AnnotatedImageCard(path: result.annotatedImage),
+        body: SizedBox.expand(
+          child: ListView(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            children: [
+              // ── Annotated Image with Bounding Boxes ───────────────────────
+              _AnnotatedImageCard(path: result.annotatedImage),
 
-          const SizedBox(height: 10),
+              const SizedBox(height: 10),
 
           // ── Single Unified Assessment Card ───────────────────────────
           if (result.riskAssessment != null)
@@ -140,7 +143,8 @@ class ResultPage extends StatelessWidget {
                 ),
               ),
             ),
-        ],
+          ],
+        ),
       ),
     ),
   );

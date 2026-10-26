@@ -85,84 +85,87 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: AppColors.appBarGradient,
-          ),
-        ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'InfraGuard-AI',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: AppColors.backgroundGradient,
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(
+              gradient: AppColors.appBarGradient,
             ),
-            Text(
-              'Administrator Analytics Dashboard',
-              style: TextStyle(
-                fontSize: 12,
-                color: AppColors.onPrimary.withValues(alpha: 0.85),
-                fontWeight: FontWeight.normal,
+          ),
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'InfraGuard-AI',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
+              Text(
+                'Administrator Analytics Dashboard',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.onPrimary.withValues(alpha: 0.85),
+                  fontWeight: FontWeight.normal,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.wifi_rounded),
+              tooltip: 'Server Connection',
+              onPressed: () => ServerConfigDialog.show(
+                context,
+                onSaved: () => _fetchLiveAnalytics(),
+              ),
+            ),
+            IconButton(
+              icon: _isLoading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.refresh),
+              tooltip: 'Refresh Real-time Data',
+              onPressed: _isLoading
+                  ? null
+                  : () async {
+                      await _fetchLiveAnalytics();
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(_isLiveBackendConnected
+                              ? 'Real-time telemetry updated from server.'
+                              : 'Offline cache refreshed.'),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    },
+            ),
+            IconButton(
+              icon: const Icon(Icons.logout),
+              tooltip: 'Log Out',
+              onPressed: _handleLogout,
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.wifi_rounded),
-            tooltip: 'Server Connection',
-            onPressed: () => ServerConfigDialog.show(
-              context,
-              onSaved: () => _fetchLiveAnalytics(),
-            ),
-          ),
-          IconButton(
-            icon: _isLoading
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                : const Icon(Icons.refresh),
-            tooltip: 'Refresh Real-time Data',
-            onPressed: _isLoading
-                ? null
-                : () async {
-                    await _fetchLiveAnalytics();
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(_isLiveBackendConnected
-                            ? 'Real-time telemetry updated from server.'
-                            : 'Offline cache refreshed.'),
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
-                  },
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Log Out',
-            onPressed: _handleLogout,
-          ),
-        ],
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppColors.backgroundGradient,
-        ),
-        child: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: _fetchLiveAnalytics,
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        body: SizedBox.expand(
+          child: SafeArea(
+            child: RefreshIndicator(
+              onRefresh: _fetchLiveAnalytics,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 1080),
@@ -464,7 +467,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       ),
                     ),
                   ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

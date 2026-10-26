@@ -161,74 +161,88 @@ class _HomePageState extends State<HomePage> {
     final textTheme = Theme.of(context).textTheme;
     final historyCount = _historyService.count;
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: AppColors.appBarGradient,
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: AppColors.backgroundGradient,
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(
+              gradient: AppColors.appBarGradient,
+            ),
           ),
-        ),
-        title: const Text('InfraGuard AI'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.wifi_rounded),
-            tooltip: 'Server Connection IP',
-            onPressed: () => ServerConfigDialog.show(context),
+          titleSpacing: 12,
+          title: const Text(
+            'InfraGuard AI',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
-          IconButton(
-            icon: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                const Icon(Icons.history_rounded),
-                if (historyCount > 0)
-                  Positioned(
-                    top: -2,
-                    right: -4,
-                    child: Container(
-                      padding: const EdgeInsets.all(3),
-                      decoration: const BoxDecoration(
-                        color: AppColors.secondary,
-                        shape: BoxShape.circle,
-                      ),
-                      constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-                      child: Text(
-                        '$historyCount',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
+          actions: [
+            IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+              icon: const Icon(Icons.wifi_rounded),
+              tooltip: 'Server Connection IP',
+              onPressed: () => ServerConfigDialog.show(context),
+            ),
+            IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+              icon: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  const Icon(Icons.history_rounded),
+                  if (historyCount > 0)
+                    Positioned(
+                      top: -2,
+                      right: -4,
+                      child: Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: const BoxDecoration(
+                          color: AppColors.secondary,
+                          shape: BoxShape.circle,
                         ),
-                        textAlign: TextAlign.center,
+                        constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                        child: Text(
+                          '$historyCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
                       ),
                     ),
-                  ),
-              ],
+                ],
+              ),
+              tooltip: 'Inspection History',
+              onPressed: () async {
+                await Navigator.pushNamed(context, AppRouter.history);
+                if (mounted) setState(() {});
+              },
             ),
-            tooltip: 'Inspection History',
-            onPressed: () async {
-              await Navigator.pushNamed(context, AppRouter.history);
-              if (mounted) setState(() {});
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout_rounded),
-            tooltip: 'Log Out',
-            onPressed: () => Navigator.pushNamedAndRemoveUntil(
-              context,
-              AppRouter.welcome,
-              (_) => false,
+            IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+              icon: const Icon(Icons.logout_rounded),
+              tooltip: 'Log Out',
+              onPressed: () => Navigator.pushNamedAndRemoveUntil(
+                context,
+                AppRouter.welcome,
+                (_) => false,
+              ),
             ),
-          ),
-        ],
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppColors.backgroundGradient,
+            const SizedBox(width: 6),
+          ],
         ),
-        child: Stack(
-        children: [
-          SafeArea(
+        body: SizedBox.expand(
+          child: Stack(
+            children: [
+              SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
               child: Center(
@@ -469,6 +483,7 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
         ],
+        ),
       ),
     ),
   );
