@@ -1,5 +1,85 @@
 [
   {
+    "run_id": "run_20261026_194533",
+    "timestamp": "2026-10-26T14:15:34.686624+00:00",
+    "location_name": "Vinayaka Layout",
+    "coordinates": "13.1088\u00b0 N, 77.5788\u00b0 E",
+    "latitude": 13.1087714,
+    "longitude": 77.578762,
+    "dominant_damage": "block_crack",
+    "total_detections": 1,
+    "risk_score": 33.1,
+    "risk_level": "MODERATE",
+    "status": "Verified",
+    "weather_summary": "Dry & Clear (20.8\u00b0C)",
+    "traffic_level": "Moderate to Low (Local Access)",
+    "maintenance_status": "CRITICALLY OVERDUE FOR RECONSTRUCTION",
+    "detections_json": "[{\"class_name\": \"block_crack\", \"confidence\": 0.277}]",
+    "image_url": "/outputs/run_20261026_194533/annotated.jpg",
+    "detections": [
+      {
+        "class_name": "block_crack",
+        "confidence": 0.277
+      }
+    ]
+  },
+  {
+    "run_id": "run_20261026_194500",
+    "timestamp": "2026-10-26T14:15:01.917237+00:00",
+    "location_name": "Vinayaka Layout",
+    "coordinates": "13.1089\u00b0 N, 77.5788\u00b0 E",
+    "latitude": 13.1088555,
+    "longitude": 77.578766,
+    "dominant_damage": "pothole",
+    "total_detections": 2,
+    "risk_score": 100.0,
+    "risk_level": "CRITICAL",
+    "status": "Action Required",
+    "weather_summary": "Dry & Clear (21.0\u00b0C)",
+    "traffic_level": "Moderate to Low (Local Access)",
+    "maintenance_status": "CRITICALLY OVERDUE FOR RECONSTRUCTION",
+    "detections_json": "[{\"class_name\": \"pothole\", \"confidence\": 0.78}, {\"class_name\": \"linear_crack\", \"confidence\": 0.273}]",
+    "image_url": "/outputs/run_20261026_194500/annotated.jpg",
+    "detections": [
+      {
+        "class_name": "pothole",
+        "confidence": 0.78
+      },
+      {
+        "class_name": "linear_crack",
+        "confidence": 0.273
+      }
+    ]
+  },
+  {
+    "run_id": "run_20261026_193941",
+    "timestamp": "2026-10-26T14:09:43.476720+00:00",
+    "location_name": "Vinayaka Layout",
+    "coordinates": "13.1088\u00b0 N, 77.5787\u00b0 E",
+    "latitude": 13.108781,
+    "longitude": 77.5787499,
+    "dominant_damage": "pothole",
+    "total_detections": 2,
+    "risk_score": 100.0,
+    "risk_level": "CRITICAL",
+    "status": "Action Required",
+    "weather_summary": "Dry & Clear (21.0\u00b0C)",
+    "traffic_level": "Moderate to Low (Local Access)",
+    "maintenance_status": "CRITICALLY OVERDUE FOR RECONSTRUCTION",
+    "detections_json": "[{\"class_name\": \"pothole\", \"confidence\": 0.78}, {\"class_name\": \"linear_crack\", \"confidence\": 0.273}]",
+    "image_url": "/outputs/run_20261026_193941/annotated.jpg",
+    "detections": [
+      {
+        "class_name": "pothole",
+        "confidence": 0.78
+      },
+      {
+        "class_name": "linear_crack",
+        "confidence": 0.273
+      }
+    ]
+  },
+  {
     "run_id": "TEST-INSP-001",
     "timestamp": "2026-10-26T13:37:44.098979+00:00",
     "location_name": "MG Road Corridor",
