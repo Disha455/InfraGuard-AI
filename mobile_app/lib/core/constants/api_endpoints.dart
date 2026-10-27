@@ -4,7 +4,7 @@
 // a base-URL or versioning change requires editing only this file.
 
 abstract final class ApiEndpoints {
-  static String _baseUrl = 'http://192.168.29.107:8000';
+  static String _baseUrl = 'http://10.196.252.38:8000';
 
   /// Base URL of the FastAPI inference server.
   static String get baseUrl => _baseUrl;

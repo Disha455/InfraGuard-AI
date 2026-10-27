@@ -1,5 +1,33 @@
 [
   {
+    "run_id": "run_20261026_231354",
+    "timestamp": "2026-10-26T17:43:56.244992+00:00",
+    "location_name": "Vinayaka Layout",
+    "coordinates": "13.1089\u00b0 N, 77.5787\u00b0 E",
+    "latitude": 13.1089041,
+    "longitude": 77.5787023,
+    "dominant_damage": "block_crack",
+    "total_detections": 2,
+    "risk_score": 58.5,
+    "risk_level": "HIGH",
+    "status": "Action Required",
+    "weather_summary": "Dry & Clear (19.0\u00b0C)",
+    "traffic_level": "Moderate to Low (Local Access)",
+    "maintenance_status": "CRITICALLY OVERDUE FOR RECONSTRUCTION",
+    "detections_json": "[{\"class_name\": \"block_crack\", \"confidence\": 0.631}, {\"class_name\": \"block_crack\", \"confidence\": 0.427}]",
+    "image_url": "/outputs/run_20261026_231354/annotated.jpg",
+    "detections": [
+      {
+        "class_name": "block_crack",
+        "confidence": 0.631
+      },
+      {
+        "class_name": "block_crack",
+        "confidence": 0.427
+      }
+    ]
+  },
+  {
     "run_id": "run_20261026_194533",
     "timestamp": "2026-10-26T14:15:34.686624+00:00",
     "location_name": "Vinayaka Layout",
